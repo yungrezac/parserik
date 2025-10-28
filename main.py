@@ -9,6 +9,11 @@ import os
 from openpyxl import Workbook
 
 
+# Заголовок для маскировки запросов
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+}
+
 # Ввод и парсинг
 
 def check_string(s):
@@ -189,7 +194,7 @@ def get_mediabasket_route_map():
         url = 'https://cdn.wbbasket.ru/api/v3/upstreams'
 
         # Отправляем GET-запрос
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
 
         # Проверяем статус ответа
         if response.status_code == 200:
@@ -228,7 +233,7 @@ def fetch_data(sellerId, brandId, backets):
 
     productsPerPage = 100
     urlTotalList = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brandId}&lang=ru&spp=30&supplier={sellerId}&uclusters=0"
-    responseTotal = requests.get(urlTotalList)
+    responseTotal = requests.get(urlTotalList, headers=headers)
     resTotal = responseTotal.json()
     productTotalData = resTotal['data']
     productsTotal = productTotalData['total']
@@ -238,7 +243,7 @@ def fetch_data(sellerId, brandId, backets):
 
     while (currentPage <= pagesCount):
         urlList = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brandId}&hide_dtype=13&lang=ru&page={currentPage}&sort=popular&spp=30&supplier={sellerId}"
-        response = requests.get(urlList)
+        response = requests.get(urlList, headers=headers)
         products = response.json()['products']
 
         for item in products:
@@ -256,7 +261,7 @@ def fetch_data(sellerId, brandId, backets):
                 urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:len(productId) - 5]}/part{productId[:len(productId) - 3]}/{productId}/info/ru/card.json"
 
                 # Отправляем запрос
-                productResponse = requests.get(urlItem)
+                productResponse = requests.get(urlItem, headers=headers)
 
                 # Проверяем статус ответа
                 if productResponse.status_code == 200:
@@ -536,7 +541,7 @@ def run_parser(seller_id, brand_id):
 if __name__ == "__main__":
     def input_data():
         """
-        Запраширует у пользователя ввод: ссылку WB или ID продавца и бренда(ов), разделённые пробелом.
+        Запрашивает у пользователя ввод: ссылку WB или ID продавца и бренда(ов), разделённые пробелом.
 
         Returns:
             str: Введённая пользователем строка.
