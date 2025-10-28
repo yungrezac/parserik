@@ -1,58 +1,74 @@
-from flask import Flask, send_from_directory, request, session, jsonify
-from main import run_parser, create_excel_file
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
+from main import run_parser, create_excel_file, parse_input
 
-app = Flask(__name__, static_folder='public', static_url_path='')
-app.secret_key = os.urandom(24)
+# Инициализация Flask приложения
+app = Flask(__name__, static_folder='public', template_folder='public')
+# Render предоставляет переменную окружения PORT для прослушивания
+port = int(os.environ.get('PORT', 5000))
 
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
+    """Отдает главную страницу."""
+    return render_template('index.html')
 
 @app.route('/run', methods=['POST'])
 def run():
+    """
+    Основной эндпоинт для запуска парсинга.
+    Получает данные, запускает парсер, создает Excel-файл и возвращает
+    данные для таблицы и имя файла для скачивания.
+    """
     try:
-        req_data = request.get_json()
-        seller_id = req_data['seller_id']
-        brand_id = req_data['brand_id']
-        
-        if not seller_id or not brand_id:
-            return jsonify({'error': "Seller ID и Brand ID не могут быть пустыми."}), 400
+        input_str = request.form.get('input_str')
+        if not input_str:
+            return jsonify({'error': 'Необходимо ввести данные (ссылку или ID).'}), 400
 
-        data = run_parser(seller_id, brand_id)
-        
-        if data:
-            session['data'] = data
-            # Get headers from all items to ensure all columns are present
-            headers = set()
-            for item in data:
-                headers.update(item.keys())
-            
-            # Sort headers for consistent column order
-            sorted_headers = sorted(list(headers))
-            
-            return jsonify({'headers': sorted_headers, 'rows': data})
-        else:
-            return jsonify({'error': "Не удалось получить данные. Проверьте правильность введенных данных и попробуйте снова."}), 500
+        # Парсим ввод, чтобы получить ID продавца и бренда
+        seller_id, brand_id = parse_input(input_str)
 
+        # Запускаем основную логику парсинга
+        mapped_data = run_parser(seller_id, brand_id)
+
+        if not mapped_data:
+            return jsonify({'error': 'Не удалось найти товары. Проверьте правильность ссылки или ID.'}), 404
+
+        # Сразу после парсинга создаем Excel-файл
+        output_path = create_excel_file(mapped_data)
+        
+        if not output_path:
+             return jsonify({'error': 'Произошла ошибка при создании Excel-файла.'}), 500
+
+        # Получаем только имя файла для формирования ссылки
+        download_filename = os.path.basename(output_path)
+
+        # Возвращаем два объекта: данные для таблицы и имя файла для кнопки "Скачать"
+        return jsonify({
+            'table_data': mapped_data,
+            'download_filename': download_filename
+        })
+
+    except ValueError as e:
+        # Обрабатываем ошибку некорректного ввода
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return jsonify({'error': f"Внутренняя ошибка сервера: {e}"}), 500
+        # Обрабатываем все остальные ошибки
+        print(f"Критическая ошибка в эндпоинте /run: {e}")
+        return jsonify({'error': 'На сервере произошла внутренняя ошибка. Подробности в логах.'}), 500
 
-@app.route('/download')
-def download():
-    data = session.get('data')
-
-    if data:
-        try:
-            filepath = create_excel_file(data)
-            if filepath:
-                return send_from_directory('downloads', os.path.basename(filepath), as_attachment=True)
-        except Exception as e:
-            print(f"An error occurred during file creation: {e}")
-            return jsonify({'error': f"Ошибка при создании файла: {e}"}), 500
-    
-    return jsonify({'error': "Нет данных для создания файла. Пожалуйста, запустите парсер снова."}), 404
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    """
+    Эндпоинт для скачивания сгенерированного файла.
+    """
+    # Указываем путь к папке 'downloads'
+    directory = os.path.join(os.getcwd(), 'downloads')
+    try:
+        # Отправляем файл пользователю
+        return send_from_directory(directory, filename, as_attachment=True)
+    except FileNotFoundError:
+        return "Файл не найден.", 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    # Запускаем приложение на порту, который указывает Render
+    app.run(host='0.0.0.0', port=port)
