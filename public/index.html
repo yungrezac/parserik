@@ -23,14 +23,15 @@
             background-color: #1a202c;
             color: #e2e8f0;
         }
-        input {
+        input, select {
             background-color: #2d3748;
             border-color: #4a5568;
             color: #e2e8f0;
         }
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             box-shadow: 0 0 0 2px #4299e1;
+            border-color: #4299e1;
         }
         button {
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
@@ -42,32 +43,35 @@
             transform: translateY(0);
         }
         th {
+            position: sticky;
+            top: 0;
             background-color: #2d3748;
+            z-index: 10;
         }
         td {
             border-color: #4a5568;
         }
+        .table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="antialiased font-sans">
-    <div class="container mx-auto p-4 max-w-4xl">
+    <div class="container mx-auto p-4 max-w-7xl">
 
         <div id="input-section" class="space-y-6 fade-in">
             <h1 class="text-4xl font-bold text-center text-white">WB Parser</h1>
-            <p class="text-center text-lg text-gray-400">Введите данные для парсинга</p>
-            <div class="p-6 bg-gray-800 rounded-xl shadow-lg space-y-4">
+            <p class="text-center text-lg text-gray-400">Введите ссылку на страницу продавца или ID вручную</p>
+            <form id="parser-form" class="p-6 bg-gray-800 rounded-xl shadow-lg space-y-4">
                 <div>
-                    <label for="seller-id" class="block text-sm font-medium text-gray-300 mb-1">ID Продавца</label>
-                    <input type="text" id="seller-id" placeholder="например, 123456" class="w-full p-3 rounded-md border-2 focus:border-blue-500">
+                    <label for="input-str" class="block text-sm font-medium text-gray-300 mb-1">Ссылка или ID</label>
+                    <input type="text" id="input-str" placeholder="https://www.wildberries.ru/seller/1170679?fbrand=310745472 или 1170679 310745472" class="w-full p-3 rounded-md border-2 focus:border-blue-500">
                 </div>
-                <div>
-                    <label for="brand-id" class="block text-sm font-medium text-gray-300 mb-1">ID Бренда</label>
-                    <input type="text" id="brand-id" placeholder="например, 654321" class="w-full p-3 rounded-md border-2 focus:border-blue-500">
-                </div>
-                <button id="run-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">
+                <button type="submit" id="run-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">
                     Запустить
                 </button>
-            </div>
+            </form>
         </div>
 
         <div id="loader-section" class="hidden text-center py-10">
@@ -76,24 +80,24 @@
                 <div class="w-4 h-4 bg-blue-400 rounded-full pulse-anim" style="animation-delay: 0.2s;"></div>
                 <div class="w-4 h-4 bg-blue-400 rounded-full pulse-anim" style="animation-delay: 0.4s;"></div>
             </div>
-            <p id="loader-message" class="mt-4 text-lg text-gray-400">Получаем данные...</p>
+            <p id="loader-message" class="mt-4 text-lg text-gray-400">Получаем данные... Это может занять несколько минут.</p>
         </div>
         
         <div id="error-section" class="hidden p-4 bg-red-800/50 border border-red-700 rounded-lg mt-6 fade-in">
-            <p id="error-message" class="text-white"></p>
-            <button id="try-again-button" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
+            <p id="error-message" class="text-white text-center"></p>
+            <button id="try-again-button" class="mt-4 mx-auto block bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
         </div>
 
         <div id="result-section" class="hidden mt-8 fade-in">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-3xl font-bold text-white">Результаты</h2>
-                <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">
+                <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>
                     Скачать Excel
                 </button>
             </div>
-            <div class="overflow-x-auto bg-gray-800 rounded-lg shadow-lg">
+            <div class="table-container overflow-x-auto bg-gray-800 rounded-lg shadow-lg">
                 <table id="result-table" class="min-w-full">
-                    <thead class="sticky top-0"></thead>
+                    <thead></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -104,12 +108,12 @@
     </div>
 
     <script>
+        const parserForm = document.getElementById('parser-form');
         const inputSection = document.getElementById('input-section');
         const loaderSection = document.getElementById('loader-section');
         const errorSection = document.getElementById('error-section');
         const resultSection = document.getElementById('result-section');
         
-        const runButton = document.getElementById('run-button');
         const downloadButton = document.getElementById('download-button');
         const tryAgainButton = document.getElementById('try-again-button');
         const newParseButton = document.getElementById('new-parse-button');
@@ -117,8 +121,7 @@
         const errorMessage = document.getElementById('error-message');
         const resultTable = document.getElementById('result-table');
         
-        runButton.addEventListener('click', runParser);
-        downloadButton.addEventListener('click', () => window.location.href = '/download');
+        parserForm.addEventListener('submit', runParser);
         tryAgainButton.addEventListener('click', resetUI);
         newParseButton.addEventListener('click', resetUI);
 
@@ -131,50 +134,81 @@
 
         function resetUI() {
             setUIState('input');
+            document.getElementById('input-str').value = '';
+            downloadButton.disabled = true;
+            downloadButton.onclick = null;
         }
 
-        function runParser() {
-            const sellerId = document.getElementById('seller-id').value;
-            const brandId = document.getElementById('brand-id').value;
+        function runParser(event) {
+            event.preventDefault(); // Предотвращаем стандартную отправку формы
+            const inputStr = document.getElementById('input-str').value;
 
-            if (!sellerId || !brandId) {
-                showError("Пожалуйста, введите ID продавца и ID бренда.");
+            if (!inputStr.trim()) {
+                showError("Поле ввода не может быть пустым.");
                 return;
             }
 
             setUIState('loading');
+            
+            const formData = new FormData();
+            formData.append('input_str', inputStr);
 
             fetch('/run', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ seller_id: sellerId, brand_id: brandId })
+                body: formData // Отправляем как form-data
             })
             .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.error || 'Ошибка сети'); });
+                // Сначала проверяем, является ли ответ JSON
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json().then(data => ({ ok: response.ok, status: response.status, json: data }));
+                } else {
+                    // Если ответ не JSON, читаем как текст
+                    return response.text().then(text => { 
+                        throw new Error(`Неожиданный ответ от сервера: ${text.substring(0, 100)}...`);
+                    });
                 }
-                return response.json();
             })
             .then(data => {
-                if (data.error) {
-                    showError(data.error);
-                } else {
-                    displayResults(data.headers, data.rows);
+                if (!data.ok) {
+                    throw new Error(data.json.error || `Ошибка сервера: ${data.status}`);
+                }
+                
+                if (data.json.error) { // Если сервер вернул JSON с полем 'error'
+                    showError(data.json.error);
+                } else if (data.json.table_data && data.json.download_filename) {
+                    displayResults(data.json.table_data);
+                    
+                    // Устанавливаем обработчик для кнопки скачивания
+                    const filename = data.json.download_filename;
+                    downloadButton.disabled = false;
+                    downloadButton.onclick = () => {
+                        window.location.href = `/download/${filename}`;
+                    };
+                    
                     setUIState('result');
+                } else {
+                     throw new Error("Получены некорректные данные от сервера.");
                 }
             })
             .catch(error => {
-                showError(error.message || "Произошла непредвиденная ошибка. Попробуйте еще раз.");
                 console.error("Fetch error:", error);
+                showError(error.message || "Произошла непредвиденная ошибка. Проверьте консоль для деталей.");
             });
         }
 
-        function displayResults(headers, rows) {
+        function displayResults(tableData) {
             const thead = resultTable.querySelector('thead');
             const tbody = resultTable.querySelector('tbody');
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
+            if (!tableData || tableData.length === 0) {
+                showError("Нет данных для отображения.");
+                return;
+            }
+
+            const headers = Object.keys(tableData[0]);
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
@@ -184,12 +218,12 @@
             });
             thead.appendChild(headerRow);
 
-            rows.forEach(row => {
+            tableData.forEach(rowData => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-t border-gray-700';
+                tr.className = 'border-t border-gray-700 hover:bg-gray-700';
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    td.textContent = row[header] !== undefined ? row[header] : '';
+                    td.textContent = rowData[header] !== undefined && rowData[header] !== null ? rowData[header] : '';
                     td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-200';
                     tr.appendChild(td);
                 });
@@ -201,6 +235,9 @@
             errorMessage.textContent = message;
             setUIState('error');
         }
+        
+        // Инициализация
+        resetUI();
     </script>
 </body>
 </html>
