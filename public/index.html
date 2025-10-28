@@ -12,7 +12,9 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.5); }
         @keyframes slide-in-fwd { 0% { transform: translateZ(-1400px); opacity: 0; } 100% { transform: translateZ(0); opacity: 1; } }
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
         .slide-in-fwd { animation: slide-in-fwd 0.8s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
+        .fade-in { animation: fade-in 0.5s ease-out both; }
         .progress-bar-inner { transition: width 0.3s ease-in-out; }
         .table-container { max-height: 60vh; }
         th { position: sticky; top: 0; background-color: #1e293b; z-index: 10; }
@@ -20,86 +22,106 @@
         .tab-button.active { color: #60a5fa; border-color: #3b82f6; }
         .tab-button:not(.active) { color: #94a3b8; border-color: transparent; }
         .tab-button:not(.active):hover { color: #e2e8f0; border-color: #475569; }
+        .nav-button { transition: all 0.2s ease-in-out; }
+        .nav-button.active svg { color: #60a5fa; }
+        .nav-button.active span { color: #60a5fa; }
+        .nav-button:not(.active) svg { color: #94a3b8; }
+        .nav-button:not(.active) span { color: #94a3b8; }
+        .nav-button:not(.active):hover svg, .nav-button:not(.active):hover span { color: #e2e8f0; }
+        /* Add padding to the bottom of the main content to avoid overlap with the fixed navbar */
+        #app-container { padding-bottom: 100px; }
     </style>
 </head>
 <body class="antialiased">
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 to-blue-900/50">
-        <div id="app-container" class="w-full max-w-4xl mx-auto">
+    <div class="min-h-screen w-full bg-gradient-to-br from-slate-900 to-blue-900/50">
+        <div id="app-container" class="w-full max-w-4xl mx-auto p-4">
 
             <!-- === INPUT SECTION === -->
-            <div id="input-section" class="glass-card rounded-2xl shadow-2xl p-8 slide-in-fwd">
+            <div id="input-section" class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
                 <div class="text-center mb-6">
-                    <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">holly Parser</h1>
-                    <p class="mt-3 text-lg text-slate-400">Выбери способ ввода данных</p>
+                    <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">holly parser</h1>
+                    <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Выбери способ ввода данных</p>
                 </div>
-
-                <!-- === TABS === -->
                 <div class="mb-6 border-b border-slate-700">
-                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                        <button id="tab-url" type="button" class="tab-button active whitespace-nowrap py-4 px-2 border-b-2 font-semibold text-lg">
-                            По ссылке
-                        </button>
-                        <button id="tab-id" type="button" class="tab-button whitespace-nowrap py-4 px-2 border-b-2 font-semibold text-lg">
-                            По ID
-                        </button>
+                    <nav class="-mb-px flex space-x-4 md:space-x-6 justify-center" aria-label="Tabs">
+                        <button id="tab-url" type="button" class="tab-button active whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ссылке</button>
+                        <button id="tab-id" type="button" class="tab-button whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ID</button>
                     </nav>
                 </div>
-
-                <form id="parser-form" class="space-y-6">
-                    <!-- URL Tab Content -->
+                <form id="parser-form" class="space-y-4">
                     <div id="tab-content-url">
-                        <input type="text" id="url-input" placeholder="https://www.wildberries.ru/seller/105413?sort=popular&page=1&fbrand=208803" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        <input type="text" id="url-input" placeholder="https://www.wildberries.ru/seller/105413?sort=popular&page=1&fbrand=208803" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                     </div>
-
-                    <!-- ID Tab Content (initially hidden) -->
                     <div id="tab-content-id" class="hidden space-y-4">
-                        <div>
-                            <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                        </div>
-                        <div>
-                            <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                        </div>
+                        <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                     </div>
-
-                    <button type="submit" id="run-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-4 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">
-                        Запустить анализ
-                    </button>
+                    <button type="submit" id="run-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Запустить анализ</button>
                 </form>
             </div>
             
-            <!-- Остальные секции (progress, error, result) без изменений -->
-            <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8">
-                <h2 class="text-2xl font-bold text-center text-white">Анализ данных...</h2>
+            <!-- Other sections (progress, error, result) -->
+            <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8 mt-8">
+                <h2 class="text-xl md:text-2xl font-bold text-center text-white">Анализ данных...</h2>
                 <p id="progress-item-name" class="text-center text-slate-400 h-6 mt-2 truncate"></p>
-                <div class="mt-6 w-full bg-slate-700 rounded-full h-4">
-                    <div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full progress-bar-inner" style="width: 0%"></div>
-                </div>
+                <div class="mt-6 w-full bg-slate-700 rounded-full h-4"><div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
                 <p id="progress-label" class="text-center text-slate-300 mt-3 font-medium"></p>
             </div>
-
             <div id="error-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8 text-center">
                 <h2 class="text-2xl font-bold text-red-400">Произошла ошибка</h2>
                 <p id="error-message" class="mt-4 text-slate-300"></p>
                 <button id="try-again-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
             </div>
-
             <div id="result-section" class="hidden mt-8">
                  <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-                    <h2 class="text-3xl font-bold text-white">Результаты Анализа</h2>
-                    <div class="mt-4 md:mt-0 space-x-4">
-                         <button id="new-parse-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Новый анализ</button>
-                         <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Скачать Excel</button>
+                    <h2 class="text-2xl md:text-3xl font-bold text-white">Результаты Анализа</h2>
+                    <div class="mt-4 md:mt-0 flex space-x-2">
+                         <button id="new-parse-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Новый анализ</button>
+                         <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Скачать Excel</button>
                     </div>
                 </div>
-                <div class="table-container glass-card rounded-lg overflow-x-auto">
-                    <table id="result-table" class="min-w-full divide-y divide-slate-700"></table>
-                </div>
+                <div class="table-container glass-card rounded-lg overflow-x-auto"><table id="result-table" class="min-w-full divide-y divide-slate-700"></table></div>
             </div>
         </div>
     </div>
 
+    <!-- === BOTTOM NAVBAR === -->
+    <nav id="bottom-navbar" class="fixed bottom-0 left-0 right-0 h-20 glass-card border-t border-slate-700 z-50">
+        <div class="max-w-4xl mx-auto h-full flex justify-around items-center">
+            <button class="nav-button active flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <span class="text-xs font-medium">Парсер</span>
+            </button>
+            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <span class="text-xs font-medium">Поиск</span>
+            </button>
+            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                <span class="text-xs font-medium">Топ</span>
+            </button>
+            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                <span class="text-xs font-medium">Избранное</span>
+            </button>
+            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span class="text-xs font-medium">Профиль</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- === MODAL PLACEHOLDER === -->
+    <div id="modal-placeholder" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 fade-in">
+        <div class="glass-card rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm">
+            <h3 class="text-2xl font-bold text-white">В разработке</h3>
+            <p class="mt-4 text-slate-300">Холи эта функция скоро появится, яусердно работаю, чтобы сделать приложение еще лучше!</p>
+            <button id="modal-close-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Понятно</button>
+        </div>
+    </div>
+
     <script>
-        // === Элементы UI ===
+        // === UI Elements ===
         const parserForm = document.getElementById('parser-form');
         const inputSection = document.getElementById('input-section');
         const progressSection = document.getElementById('progress-section');
@@ -112,8 +134,9 @@
         const progressLabel = document.getElementById('progress-label');
         const progressItemName = document.getElementById('progress-item-name');
         const errorMessage = document.getElementById('error-message');
-        
-        // === Элементы для табов ===
+        const resultTable = document.getElementById('result-table');
+
+        // === Tab Elements ===
         const tabUrl = document.getElementById('tab-url');
         const tabId = document.getElementById('tab-id');
         const tabContentUrl = document.getElementById('tab-content-url');
@@ -122,29 +145,39 @@
         const sellerIdInput = document.getElementById('seller-id-input');
         const brandIdInput = document.getElementById('brand-id-input');
 
-        let eventSource;
-        let activeTab = 'url'; // Состояние активной вкладки
+        // === Modal Elements ===
+        const modalPlaceholder = document.getElementById('modal-placeholder');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalTriggers = document.querySelectorAll('[data-modal-trigger]');
 
-        // === Обработчики событий ===
+        let eventSource;
+        let activeTab = 'url';
+
+        // === Event Handlers ===
         parserForm.addEventListener('submit', startParsing);
         tryAgainButton.addEventListener('click', resetUI);
         newParseButton.addEventListener('click', resetUI);
         tabUrl.addEventListener('click', () => switchTab('url'));
         tabId.addEventListener('click', () => switchTab('id'));
+        modalCloseButton.addEventListener('click', hideModal);
+        modalPlaceholder.addEventListener('click', (e) => { if(e.target === modalPlaceholder) hideModal(); });
+        modalTriggers.forEach(trigger => trigger.addEventListener('click', showModal));
 
-        // === Логика переключения табов ===
+        // === Modal Logic ===
+        function showModal() { modalPlaceholder.classList.remove('hidden'); }
+        function hideModal() { modalPlaceholder.classList.add('hidden'); }
+
+        // === Tab Logic ===
         function switchTab(tabName) {
             activeTab = tabName;
             const isUrlTab = tabName === 'url';
-            
             tabUrl.classList.toggle('active', isUrlTab);
             tabId.classList.toggle('active', !isUrlTab);
-            
             tabContentUrl.classList.toggle('hidden', !isUrlTab);
             tabContentId.classList.toggle('hidden', isUrlTab);
         }
 
-        // === Основная логика приложения ===
+        // === Core App Logic ===
         function setUIState(state) {
             inputSection.classList.toggle('hidden', state !== 'input');
             progressSection.classList.toggle('hidden', state !== 'progress');
@@ -159,7 +192,7 @@
             progressBar.style.width = '0%';
             progressLabel.textContent = '';
             progressItemName.textContent = '';
-            switchTab('url'); // Сброс на вкладку по умолчанию
+            switchTab('url');
         }
 
         function startParsing(event) {
@@ -186,10 +219,9 @@
 
             setUIState('progress');
             eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
-
-            eventSource.onmessage = (event) => handleServerMessage(JSON.parse(event.data));
+            eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
             eventSource.onerror = () => {
-                showError("Ошибка соединения с сервером. Пожалуйста, попробуйте еще раз.");
+                showError("Ошибка соединения с сервером.");
                 if(eventSource) eventSource.close();
             };
         }
@@ -204,7 +236,7 @@
                     const percent = data.total > 0 ? (data.current / data.total) * 100 : 0;
                     progressBar.style.width = `${percent}%`;
                     progressLabel.textContent = `${data.current} / ${data.total}`;
-                    progressItemName.textContent = data.message ? `Обработка: ${data.message}` : 'Получение данных о товаре...';
+                    progressItemName.textContent = data.message ? `Обработка: ${data.message}` : 'Получение данных...';
                     break;
                 case 'result':
                     if(eventSource) eventSource.close();
@@ -225,18 +257,15 @@
         }
 
         function displayResults(tableData) {
-            const table = document.getElementById('result-table');
-            table.innerHTML = ''; // Очищаем старые данные
-
+            const table = resultTable;
+            table.innerHTML = '';
             if (!tableData || tableData.length === 0) return;
 
             const headers = Object.keys(tableData[0]);
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
-            
             thead.className = 'bg-slate-800/50';
             tbody.className = 'divide-y divide-slate-800';
-
             const headerRow = document.createElement('tr');
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -257,11 +286,10 @@
                 });
                 tbody.appendChild(tr);
             });
-            
             table.append(thead, tbody);
         }
 
-        // Инициализация UI при первой загрузке
+        // Initial UI setup
         resetUI();
     </script>
 </body>
