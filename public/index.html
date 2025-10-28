@@ -3,41 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>holly app</title>
+    <title>WB Insight Parser</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* slate-900 */
-            color: #f8fafc; /* slate-50 */
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7); /* slate-800 with 70% opacity */
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(51, 65, 85, 0.5); /* slate-700 with 50% opacity */
-        }
-        @keyframes slide-in-fwd {
-            0% { transform: translateZ(-1400px); opacity: 0; }
-            100% { transform: translateZ(0); opacity: 1; }
-        }
-        .slide-in-fwd {
-            animation: slide-in-fwd 0.8s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-        }
-        .progress-bar-inner {
-            transition: width 0.3s ease-in-out;
-        }
-        .table-container {
-            max-height: 60vh;
-        }
-         th {
-            position: sticky;
-            top: 0;
-            background-color: #1e293b; /* slate-800 */
-            z-index: 10;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.5); }
+        @keyframes slide-in-fwd { 0% { transform: translateZ(-1400px); opacity: 0; } 100% { transform: translateZ(0); opacity: 1; } }
+        .slide-in-fwd { animation: slide-in-fwd 0.8s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
+        .progress-bar-inner { transition: width 0.3s ease-in-out; }
+        .table-container { max-height: 60vh; }
+        th { position: sticky; top: 0; background-color: #1e293b; z-index: 10; }
+        .tab-button { transition: all 0.2s ease-in-out; }
+        .tab-button.active { color: #60a5fa; border-color: #3b82f6; }
+        .tab-button:not(.active) { color: #94a3b8; border-color: transparent; }
+        .tab-button:not(.active):hover { color: #e2e8f0; border-color: #475569; }
     </style>
 </head>
 <body class="antialiased">
@@ -46,21 +28,46 @@
 
             <!-- === INPUT SECTION === -->
             <div id="input-section" class="glass-card rounded-2xl shadow-2xl p-8 slide-in-fwd">
-                <div class="text-center mb-8">
-                    <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">Holly parser</h1>
-                    <p class="mt-3 text-lg text-slate-400">Введи ссылку на продавца или ID для начала магии</p>
+                <div class="text-center mb-6">
+                    <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">WB Insight Parser</h1>
+                    <p class="mt-3 text-lg text-slate-400">Выберите способ ввода данных</p>
                 </div>
+
+                <!-- === TABS === -->
+                <div class="mb-6 border-b border-slate-700">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button id="tab-url" type="button" class="tab-button active whitespace-nowrap py-4 px-2 border-b-2 font-semibold text-lg">
+                            По ссылке
+                        </button>
+                        <button id="tab-id" type="button" class="tab-button whitespace-nowrap py-4 px-2 border-b-2 font-semibold text-lg">
+                            По ID
+                        </button>
+                    </nav>
+                </div>
+
                 <form id="parser-form" class="space-y-6">
-                    <div>
-                        <input type="text" id="input-str" placeholder="https://www.wildberries.ru/seller/12345" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    <!-- URL Tab Content -->
+                    <div id="tab-content-url">
+                        <input type="text" id="url-input" placeholder="https://www.wildberries.ru/seller/1170679" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                     </div>
+
+                    <!-- ID Tab Content (initially hidden) -->
+                    <div id="tab-content-id" class="hidden space-y-4">
+                        <div>
+                            <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+
                     <button type="submit" id="run-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-4 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">
                         Запустить анализ
                     </button>
                 </form>
             </div>
-
-            <!-- === PROGRESS SECTION === -->
+            
+            <!-- Остальные секции (progress, error, result) без изменений -->
             <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8">
                 <h2 class="text-2xl font-bold text-center text-white">Анализ данных...</h2>
                 <p id="progress-item-name" class="text-center text-slate-400 h-6 mt-2 truncate"></p>
@@ -70,16 +77,14 @@
                 <p id="progress-label" class="text-center text-slate-300 mt-3 font-medium"></p>
             </div>
 
-            <!-- === ERROR SECTION === -->
             <div id="error-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8 text-center">
                 <h2 class="text-2xl font-bold text-red-400">Произошла ошибка</h2>
                 <p id="error-message" class="mt-4 text-slate-300"></p>
                 <button id="try-again-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
             </div>
 
-            <!-- === RESULT SECTION === -->
             <div id="result-section" class="hidden mt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                 <div class="flex flex-col md:flex-row justify-between items-center mb-4">
                     <h2 class="text-3xl font-bold text-white">Результаты Анализа</h2>
                     <div class="mt-4 md:mt-0 space-x-4">
                          <button id="new-parse-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Новый анализ</button>
@@ -87,16 +92,14 @@
                     </div>
                 </div>
                 <div class="table-container glass-card rounded-lg overflow-x-auto">
-                    <table id="result-table" class="min-w-full divide-y divide-slate-700">
-                        <thead class="bg-slate-800/50"></thead>
-                        <tbody class="divide-y divide-slate-800"></tbody>
-                    </table>
+                    <table id="result-table" class="min-w-full divide-y divide-slate-700"></table>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // === Элементы UI ===
         const parserForm = document.getElementById('parser-form');
         const inputSection = document.getElementById('input-section');
         const progressSection = document.getElementById('progress-section');
@@ -109,14 +112,39 @@
         const progressLabel = document.getElementById('progress-label');
         const progressItemName = document.getElementById('progress-item-name');
         const errorMessage = document.getElementById('error-message');
-        const resultTable = document.getElementById('result-table');
+        
+        // === Элементы для табов ===
+        const tabUrl = document.getElementById('tab-url');
+        const tabId = document.getElementById('tab-id');
+        const tabContentUrl = document.getElementById('tab-content-url');
+        const tabContentId = document.getElementById('tab-content-id');
+        const urlInput = document.getElementById('url-input');
+        const sellerIdInput = document.getElementById('seller-id-input');
+        const brandIdInput = document.getElementById('brand-id-input');
 
         let eventSource;
+        let activeTab = 'url'; // Состояние активной вкладки
 
+        // === Обработчики событий ===
         parserForm.addEventListener('submit', startParsing);
         tryAgainButton.addEventListener('click', resetUI);
         newParseButton.addEventListener('click', resetUI);
+        tabUrl.addEventListener('click', () => switchTab('url'));
+        tabId.addEventListener('click', () => switchTab('id'));
 
+        // === Логика переключения табов ===
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const isUrlTab = tabName === 'url';
+            
+            tabUrl.classList.toggle('active', isUrlTab);
+            tabId.classList.toggle('active', !isUrlTab);
+            
+            tabContentUrl.classList.toggle('hidden', !isUrlTab);
+            tabContentId.classList.toggle('hidden', isUrlTab);
+        }
+
+        // === Основная логика приложения ===
         function setUIState(state) {
             inputSection.classList.toggle('hidden', state !== 'input');
             progressSection.classList.toggle('hidden', state !== 'progress');
@@ -125,64 +153,67 @@
         }
 
         function resetUI() {
-            if (eventSource) {
-                eventSource.close();
-            }
+            if (eventSource) eventSource.close();
             setUIState('input');
-            document.getElementById('input-str').value = '';
+            parserForm.reset();
             progressBar.style.width = '0%';
             progressLabel.textContent = '';
             progressItemName.textContent = '';
+            switchTab('url'); // Сброс на вкладку по умолчанию
         }
 
         function startParsing(event) {
             event.preventDefault();
-            const inputStr = document.getElementById('input-str').value;
-            if (!inputStr.trim()) {
+            let inputStr = '';
+
+            if (activeTab === 'url') {
+                inputStr = urlInput.value.trim();
+            } else {
+                const sellerId = sellerIdInput.value.trim();
+                const brandId = brandIdInput.value.trim();
+                if (sellerId && brandId) {
+                    inputStr = `${sellerId} ${brandId}`;
+                } else {
+                    showError("Оба поля, ID Продавца и ID Бренда, должны быть заполнены.");
+                    return;
+                }
+            }
+
+            if (!inputStr) {
                 showError("Поле ввода не может быть пустым.");
                 return;
             }
 
             setUIState('progress');
-            const formData = new FormData();
-            formData.append('input_str', inputStr);
-
-            // Используем EventSource для подключения к стриминговому эндпоинту
             eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
 
-            eventSource.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                handleServerMessage(data);
-            };
-
-            eventSource.onerror = function() {
+            eventSource.onmessage = (event) => handleServerMessage(JSON.parse(event.data));
+            eventSource.onerror = () => {
                 showError("Ошибка соединения с сервером. Пожалуйста, попробуйте еще раз.");
-                eventSource.close();
+                if(eventSource) eventSource.close();
             };
         }
 
         function handleServerMessage(data) {
             switch(data.type) {
                 case 'log':
-                    progressItemName.textContent = data.message;
-                    break;
                 case 'start':
                     progressItemName.textContent = data.message;
                     break;
                 case 'progress':
-                    const percent = (data.current / data.total) * 100;
+                    const percent = data.total > 0 ? (data.current / data.total) * 100 : 0;
                     progressBar.style.width = `${percent}%`;
                     progressLabel.textContent = `${data.current} / ${data.total}`;
-                    progressItemName.textContent = `Обработка: ${data.message}`;
+                    progressItemName.textContent = data.message ? `Обработка: ${data.message}` : 'Получение данных о товаре...';
                     break;
                 case 'result':
-                    eventSource.close();
+                    if(eventSource) eventSource.close();
                     displayResults(data.data.table_data);
                     downloadButton.onclick = () => window.location.href = `/download/${data.data.download_filename}`;
                     setUIState('result');
                     break;
                 case 'error':
-                    eventSource.close();
+                    if(eventSource) eventSource.close();
                     showError(data.message);
                     break;
             }
@@ -194,14 +225,18 @@
         }
 
         function displayResults(tableData) {
-            const thead = resultTable.querySelector('thead');
-            const tbody = resultTable.querySelector('tbody');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
+            const table = document.getElementById('result-table');
+            table.innerHTML = ''; // Очищаем старые данные
 
             if (!tableData || tableData.length === 0) return;
 
             const headers = Object.keys(tableData[0]);
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            
+            thead.className = 'bg-slate-800/50';
+            tbody.className = 'divide-y divide-slate-800';
+
             const headerRow = document.createElement('tr');
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -222,8 +257,11 @@
                 });
                 tbody.appendChild(tr);
             });
+            
+            table.append(thead, tbody);
         }
 
+        // Инициализация UI при первой загрузке
         resetUI();
     </script>
 </body>
