@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, Response, stream_with_context
 import os
-from main import run_parser, create_excel_file, parse_input
+import time
+import json
+from main import stream_parser, parse_input
 
 # Инициализация Flask приложения
 app = Flask(__name__, static_folder='public', template_folder='public')
-# Render предоставляет переменную окружения PORT для прослушивания
 port = int(os.environ.get('PORT', 5000))
 
 @app.route('/')
@@ -12,63 +13,48 @@ def index():
     """Отдает главную страницу."""
     return render_template('index.html')
 
-@app.route('/run', methods=['POST'])
-def run():
+@app.route('/stream', methods=['GET'])
+def stream_run():
     """
-    Основной эндпоинт для запуска парсинга.
-    Получает данные, запускает парсер, создает Excel-файл и возвращает
-    данные для таблицы и имя файла для скачивания.
+    Эндпоинт, который использует Server-Sent Events (SSE)
+    для трансляции прогресса парсинга в реальном времени.
     """
-    try:
-        input_str = request.form.get('input_str')
-        if not input_str:
-            return jsonify({'error': 'Необходимо ввести данные (ссылку или ID).'}), 400
+    input_str = request.args.get('input_str')
+    if not input_str:
+        return Response(status=400)
 
-        # Парсим ввод, чтобы получить ID продавца и бренда
-        seller_id, brand_id = parse_input(input_str)
+    def generate():
+        """Функция-генератор, которая будет транслировать события"""
+        try:
+            try:
+                seller_id, brand_id = parse_input(input_str)
+            except ValueError as e:
+                error_payload = json.dumps({"type": "error", "message": str(e)})
+                yield f"data: {error_payload}\n\n"
+                return
 
-        # Запускаем основную логику парсинга
-        mapped_data = run_parser(seller_id, brand_id)
+            for progress_update in stream_parser(seller_id, brand_id):
+                yield f"data: {progress_update}\n\n"
+                time.sleep(0.05)
 
-        if not mapped_data:
-            return jsonify({'error': 'Не удалось найти товары. Проверьте правильность ссылки или ID.'}), 404
+        except Exception as e:
+            error_payload = json.dumps({
+                "type": "error", 
+                "message": f"Критическая ошибка на сервере: {str(e)}"
+            })
+            yield f"data: {error_payload}\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
-        # Сразу после парсинга создаем Excel-файл
-        output_path = create_excel_file(mapped_data)
-        
-        if not output_path:
-             return jsonify({'error': 'Произошла ошибка при создании Excel-файла.'}), 500
-
-        # Получаем только имя файла для формирования ссылки
-        download_filename = os.path.basename(output_path)
-
-        # Возвращаем два объекта: данные для таблицы и имя файла для кнопки "Скачать"
-        return jsonify({
-            'table_data': mapped_data,
-            'download_filename': download_filename
-        })
-
-    except ValueError as e:
-        # Обрабатываем ошибку некорректного ввода
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        # Обрабатываем все остальные ошибки
-        print(f"Критическая ошибка в эндпоинте /run: {e}")
-        return jsonify({'error': 'На сервере произошла внутренняя ошибка. Подробности в логах.'}), 500
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
-    """
-    Эндпоинт для скачивания сгенерированного файла.
-    """
-    # Указываем путь к папке 'downloads'
+    """Эндпоинт для скачивания сгенерированного файла."""
     directory = os.path.join(os.getcwd(), 'downloads')
     try:
-        # Отправляем файл пользователю
         return send_from_directory(directory, filename, as_attachment=True)
     except FileNotFoundError:
         return "Файл не найден.", 404
 
 if __name__ == '__main__':
-    # Запускаем приложение на порту, который указывает Render
     app.run(host='0.0.0.0', port=port)
