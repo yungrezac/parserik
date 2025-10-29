@@ -248,7 +248,7 @@ def map_data(data, baskets):
             'Комплектация': find_value_in_arrays(options, advanced_info_group, search_name='Комплектация'),
             'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, search_name='Назначение косметического средства'),
             'Назначение подарка': '', 
-            'Объем товара': find_value_in_arrays(options, cosmetics_group, search_name='Объем товара'),
+            'Объем товара': extract_number(find_value_in_arrays(options, cosmetics_group, search_name='Объем товара')),
             'Повод': '', 
             'Раздел меню': '', 
             'Срок годности': find_value_in_arrays(options, advanced_info_group, search_name='Срок годности'),
@@ -304,29 +304,26 @@ def create_excel_file(data):
 
     # --- Заголовки ---
     # Строка 1
-    ws.append(['','','','Основная информация','','','','','','','','','Размеры и Баркоды','Габариты','','','','','Документы','','','','','Дополнительная информация','','','','','','','','','','','','','','','','','','','Цены',''])
-    ws.merge_cells('D1:L1')
-    ws.merge_cells('N1:R1')
-    ws.merge_cells('S1:W1')
-    ws.merge_cells('X1:AQ1')
+    ws.append(['Основная информация','','','','','','','','','Размеры и Баркоды','Габариты','','','','','Документы','','','','','Дополнительная информация','','','','','','','','','','','','','','','','','','','','','Цены',''])
+    ws.merge_cells('A1:I1')
+    ws.merge_cells('J1:N1')
+    ws.merge_cells('O1:S1')
+    ws.merge_cells('T1:AO1')
     for cell in ws[1]:
         cell.style = header_style_s0
     ws.row_dimensions[1].height = 41
 
     # Строка 2
-    ws.append([''] * 44)
+    ws.append([''] * 42)
     for cell in ws[2]:
         cell.style = header_style_s1
     ws.row_dimensions[2].height = 63
 
     # Строка 3
     headers_row3 = ['Группа', 'Артикул продавца', 'Артикул WB', 'Наименование', 'Категория продавца', 'Бренд', 'Описание', 'Фото', 'Видео', 'Полное наименование товара', 'Состав', 'Баркод', 'Вес с упаковкой (кг)', 'Вес товара без упаковки (г)', 'Высота упаковки', 'Длина упаковки', 'Ширина упаковки', 'Дата окончания действия сертификата/декларации', 'Дата регистрации сертификата/декларации', 'Номер декларации соответствия', 'Номер сертификата соответствия', 'Свидетельство о регистрации СГР', 'SPF', 'Артикул OZON', 'Возрастные ограничения', 'Время нанесения', 'Действие', 'ИКПУ', 'Код упаковки', 'Комплектация', 'Назначение косметического средства', 'Назначение подарка', 'Объем товара', 'Повод', 'Раздел меню', 'Срок годности', 'Страна производства', 'ТНВЭД', 'Тип доставки', 'Тип кожи', 'Упаковка', 'Форма упаковки', 'Ставка НДС', '']
-    # Пропускаем первые два столбца A и B, и C - столбец-разделитель
-    ws.append(['',''] + headers_row3)
-    # Применяем стили к нужным ячейкам в строке 3
-    for col_idx, cell in enumerate(ws[3], 1):
-        if col_idx > 2: # Начиная с D
-            cell.style = header_style_s2
+    ws.append(headers_row3)
+    for cell in ws[3]:
+        cell.style = header_style_s2
 
     ws.row_dimensions[3].height = 41
     
@@ -377,12 +374,9 @@ def create_excel_file(data):
         'Максимальное количество значений: 1',
         ''
     ]
-    # Пропускаем первые два столбца A и B
-    ws.append(['',''] + descriptions_row4)
-    # Применяем стили к нужным ячейкам в строке 4
-    for col_idx, cell in enumerate(ws[4], 1):
-         if col_idx > 2: # Начиная с D
-            cell.style = description_style_s3
+    ws.append(descriptions_row4)
+    for cell in ws[4]:
+        cell.style = description_style_s3
     ws.row_dimensions[4].height = 56
 
 
@@ -390,15 +384,13 @@ def create_excel_file(data):
     if data:
         # Используем headers_row3 для обеспечения правильного порядка
         for row_data in data:
-            row_to_append = ['', ''] # Пустые A, B, C
+            row_to_append = []
             for header in headers_row3:
                  row_to_append.append(row_data.get(header, ''))
             ws.append(row_to_append)
             
     # Устанавливаем ширину столбцов
-    ws.column_dimensions['A'].width = 8
-    ws.column_dimensions['B'].width = 30
-    for col in range(ord('C'), ord('S') + 1):
+    for col in range(ord('A'), ord('Q') + 1):
         ws.column_dimensions[chr(col)].width = 30
 
     wb.save(output_path)
