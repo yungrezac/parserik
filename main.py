@@ -7,6 +7,7 @@ import datetime
 import math
 import os
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side, NamedStyle
 import json
 
 # Заголовки, маскирующиеся под реальный браузер
@@ -145,7 +146,6 @@ def stream_parser(seller_id, brand_id):
 
 
 # --- Вспомогательные функции (без критических изменений) ---
-
 def check_string(s): return bool(re.fullmatch(r'(\d+%3B)*\d+', s))
 def parse_input(input_str):
     parts = input_str.split()
@@ -264,22 +264,143 @@ def map_data(data, baskets):
     return new_data
 
 def create_excel_file(data):
-    if not data: return None
-    if not os.path.exists("downloads"): os.makedirs("downloads")
+    if not data:
+        return None
+
+    if not os.path.exists("downloads"):
+        os.makedirs("downloads")
     
     filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
     output_path = os.path.join("downloads", filename)
     
     wb = Workbook()
     ws = wb.active
+
+    # Стили
+    header_style_s0 = NamedStyle(name="header_style_s0")
+    header_style_s0.fill = PatternFill(start_color="ECDAFF", end_color="ECDAFF", fill_type="solid")
+    header_style_s0.font = Font(name='Calibri', size=16)
+    header_style_s0.alignment = Alignment(vertical='bottom')
+
+    header_style_s1 = NamedStyle(name="header_style_s1")
+    header_style_s1.fill = PatternFill(start_color="ECDAFF", end_color="ECDAFF", fill_type="solid")
+    header_style_s1.font = Font(name='Calibri', size=12)
+    header_style_s1.alignment = Alignment(vertical='bottom')
+
+    header_style_s2 = NamedStyle(name="header_style_s2")
+    header_style_s2.fill = PatternFill(start_color="9A41FE", end_color="9A41FE", fill_type="solid")
+    header_style_s2.font = Font(name='Calibri', size=12, bold=True, color="FFFFFF")
+    header_style_s2.alignment = Alignment(vertical='middle')
+
+    description_style_s3 = NamedStyle(name="description_style_s3")
+    description_style_s3.fill = PatternFill(start_color="F0F0F3", end_color="F0F0F3", fill_type="solid")
+    description_style_s3.font = Font(name='Calibri', size=10)
+    description_style_s3.alignment = Alignment(vertical='top', wrap_text=True)
+
+    wb.add_named_style(header_style_s0)
+    wb.add_named_style(header_style_s1)
+    wb.add_named_style(header_style_s2)
+    wb.add_named_style(description_style_s3)
+
+    # --- Заголовки ---
+    # Строка 1
+    ws.append(['','','','Основная информация','','','','','','','','','Размеры и Баркоды','Габариты','','','','','Документы','','','','','Дополнительная информация','','','','','','','','','','','','','','','','','','','Цены',''])
+    ws.merge_cells('D1:L1')
+    ws.merge_cells('N1:R1')
+    ws.merge_cells('S1:W1')
+    ws.merge_cells('X1:AQ1')
+    for cell in ws[1]:
+        cell.style = header_style_s0
+    ws.row_dimensions[1].height = 41
+
+    # Строка 2
+    ws.append([''] * 44)
+    for cell in ws[2]:
+        cell.style = header_style_s1
+    ws.row_dimensions[2].height = 63
+
+    # Строка 3
+    headers_row3 = ['Группа', 'Артикул продавца', 'Артикул WB', 'Наименование', 'Категория продавца', 'Бренд', 'Описание', 'Фото', 'Видео', 'Полное наименование товара', 'Состав', 'Баркод', 'Вес с упаковкой (кг)', 'Вес товара без упаковки (г)', 'Высота упаковки', 'Длина упаковки', 'Ширина упаковки', 'Дата окончания действия сертификата/декларации', 'Дата регистрации сертификата/декларации', 'Номер декларации соответствия', 'Номер сертификата соответствия', 'Свидетельство о регистрации СГР', 'SPF', 'Артикул OZON', 'Возрастные ограничения', 'Время нанесения', 'Действие', 'ИКПУ', 'Код упаковки', 'Комплектация', 'Назначение косметического средства', 'Назначение подарка', 'Объем товара', 'Повод', 'Раздел меню', 'Срок годности', 'Страна производства', 'ТНВЭД', 'Тип доставки', 'Тип кожи', 'Упаковка', 'Форма упаковки', 'Ставка НДС', '']
+    # Пропускаем первые два столбца A и B, и C - столбец-разделитель
+    ws.append(['',''] + headers_row3)
+    # Применяем стили к нужным ячейкам в строке 3
+    for col_idx, cell in enumerate(ws[3], 1):
+        if col_idx > 2: # Начиная с D
+            cell.style = header_style_s2
+
+    ws.row_dimensions[3].height = 41
     
+    # Строка 4
+    descriptions_row4 = [
+        '',
+        'Это номер или название, по которому вы сможете идентифицировать свой товар.',
+        'Уникальный идентификатор карточки, который присваивается после успешного создания товара.',
+        '',
+        'Категория выбирается строго из справочника, справочник можно посмотреть через единичное создание карточек.',
+        '',
+        'Если вы не заполните характеристики, то мы постараемся заполнить их сами из вашего описания или по фото товара.',
+        "Список ссылок на фотографии разделённый ';' (Количество - до 30 шт.)",
+        'Ссылка на видео (Количество - 1 шт.)',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 20',
+        '',
+        'Единица измерения: кг',
+        'Единица измерения: г',
+        'Единица измерения: см',
+        'Единица измерения: см',
+        'Единица измерения: см',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 12',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 3',
+        'Единица измерения: мл',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 3',
+        'Максимальное количество значений: 1',
+        'Максимальное количество значений: 1',
+        ''
+    ]
+    # Пропускаем первые два столбца A и B
+    ws.append(['',''] + descriptions_row4)
+    # Применяем стили к нужным ячейкам в строке 4
+    for col_idx, cell in enumerate(ws[4], 1):
+         if col_idx > 2: # Начиная с D
+            cell.style = description_style_s3
+    ws.row_dimensions[4].height = 56
+
+
+    # --- Данные ---
     if data:
-        headers = list(data[0].keys())
-        ws.append(headers)
+        # Используем headers_row3 для обеспечения правильного порядка
         for row_data in data:
-            row = [row_data.get(h, '') for h in headers]
-            ws.append(row)
+            row_to_append = ['', ''] # Пустые A, B, C
+            for header in headers_row3:
+                 row_to_append.append(row_data.get(header, ''))
+            ws.append(row_to_append)
             
+    # Устанавливаем ширину столбцов
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 30
+    for col in range(ord('C'), ord('S') + 1):
+        ws.column_dimensions[chr(col)].width = 30
+
     wb.save(output_path)
     return output_path
 
