@@ -157,48 +157,119 @@ def get_host_by_range(range_value, route_map):
     return ''
 
 def map_data(data):
-    # Эта функция остается без изменений, но будет вызываться в конце генератором
     new_data = []
     for item in data:
         advanced = item.get('advanced')
         if not advanced: continue
-        new_item = {
-            'id': item.get('id',''), 'name': item.get('name',''),
-            'category': item.get('entity',''), 'brand': item.get('brand',''),
-            'description': advanced.get('description','')
-        }
+        
+        # Получаем опции и группы опций
         options = advanced.get('options', [])
-        groupedOptions = advanced.get('grouped_options', [])
-        dimensions = find_options_by_group_name(groupedOptions, 'Габариты')
-        advancedInfo = find_options_by_group_name(groupedOptions, 'Дополнительная информация')
-        new_item.update({
-            'gross': extract_number(find_value_in_arrays(options, dimensions, 'Вес с упаковкой (кг)')),
-            'net': extract_number(find_value_in_arrays(options, dimensions, 'Вес товара без упаковки (г)')),
-            'height': extract_number(find_value_in_arrays(options, dimensions, 'Длина упаковки')),
-            'length': extract_number(find_value_in_arrays(options, dimensions, 'Высота упаковки')),
-            'width': extract_number(find_value_in_arrays(options, dimensions, 'Ширина упаковки')),
-            'equipment': find_value_in_arrays(options, advancedInfo, 'Комплектация'),
-            'expiration_date': find_value_in_arrays(options, advancedInfo, 'Срок годности'),
-            'country': find_value_in_arrays(options, advancedInfo, 'Страна производства'),
-            'package': find_value_in_arrays(options, advancedInfo, 'Упаковка'),
-            'tax': 20
-        })
+        grouped_options = advanced.get('grouped_options', [])
+        
+        # Ищем нужные группы
+        dimensions_group = find_options_by_group_name(grouped_options, 'Габариты')
+        advanced_info_group = find_options_by_group_name(grouped_options, 'Дополнительная информация')
+        cosmetics_group = find_options_by_group_name(grouped_options, 'Косметическое средство')
+
+        # Формируем фото и видео
+        photo_urls = []
+        video_url = ''
+        if item.get('id'):
+            product_id_str = str(item['id'])
+            host = get_host_by_range(int(product_id_str[:-5]), get_mediabasket_route_map())
+            if host:
+                # Фото
+                for i in range(1, 11): # Предположим, что у товара до 10 фото
+                    photo_urls.append(f"https://{host}/vol{product_id_str[:-5]}/part{product_id_str[:-3]}/{product_id_str}/images/c516x688/{i}.jpg")
+                
+                # Видео (если есть)
+                # Логика для видео может быть сложнее, здесь упрощенный вариант
+                # video_url = f"https://{host}/vol{product_id_str[:-5]}/part{product_id_str[:-3]}/{product_id_str}/video/1.mp4"
+        
+        # Сертификаты
+        certificates = advanced.get('certificates', [])
+        cert_end_date = ''
+        cert_reg_date = ''
+        declaration_num = ''
+        certificate_num = ''
+        sgr_num = ''
+        if certificates:
+            cert = certificates[0]
+            cert_end_date = cert.get('end_date','')
+            cert_reg_date = cert.get('start_date','')
+            # Логика для определения типа сертификата и номера
+            # Это упрощение, т.к. в API может быть несколько сертификатов разных типов
+            if 'ЕАЭС' in cert.get('__name', ''):
+                declaration_num = cert.get('number', '')
+            else:
+                certificate_num = cert.get('number', '')
+
+        new_item = {
+            'Группа': '',  # Нет данных
+            'Артикул продавца': item.get('vendorCode', ''),
+            'Артикул WB': item.get('id', ''),
+            'Наименование': item.get('name', ''),
+            'Категория продавца': '', # Нет прямого аналога
+            'Бренд': item.get('brand', ''),
+            'Описание': advanced.get('description', ''),
+            'Фото': ', '.join(photo_urls),
+            'Видео': video_url,
+            'Полное наименование товара': advanced.get('name', ''),
+            'Состав': find_value_in_arrays(options, advanced_info_group, 'Состав'),
+            'Баркод': '', # Нет данных
+            'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, 'Вес с упаковкой (кг)')),
+            'Вес товара без упаковки (г)': extract_number(find_value_in_arrays(options, dimensions_group, 'Вес товара без упаковки (г)')),
+            'Высота упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Высота упаковки')),
+            'Длина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Длина упаковки')),
+            'Ширина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Ширина упаковки')),
+            'Дата окончания действия сертификата/декларации': cert_end_date,
+            'Дата регистрации сертификата/декларации': cert_reg_date,
+            'Номер декларации соответствия': declaration_num,
+            'Номер сертификата соответствия': certificate_num,
+            'Свидетельство о регистрации СГР': sgr_num,
+            'SPF': find_value_in_arrays(options, cosmetics_group, 'SPF'),
+            'Артикул OZON': '', # Нет данных
+            'Возрастные ограничения': find_value_in_arrays(options, advanced_info_group, 'Возрастные ограничения'),
+            'Время нанесения': find_value_in_arrays(options, cosmetics_group, 'Время нанесения'),
+            'Действие': find_value_in_arrays(options, cosmetics_group, 'Действие'),
+            'ИКПУ': '', # Нет данных
+            'Код упаковки': '', # Нет данных
+            'Комплектация': find_value_in_arrays(options, advanced_info_group, 'Комплектация'),
+            'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, 'Назначение косметического средства'),
+            'Назначение подарка': '', # Нет данных
+            'Объем товара': find_value_in_arrays(options, cosmetics_group, 'Объем товара'),
+            'Повод': '', # Нет данных
+            'Раздел меню': '', # Нет данных
+            'Срок годности': find_value_in_arrays(options, advanced_info_group, 'Срок годности'),
+            'Страна производства': find_value_in_arrays(options, advanced_info_group, 'Страна производства'),
+            'ТНВЭД': find_value_in_arrays(options, advanced_info_group, 'ТН ВЭД'),
+            'Тип доставки': '', # Нет данных
+            'Тип кожи': find_value_in_arrays(options, cosmetics_group, 'Тип кожи'),
+            'Упаковка': find_value_in_arrays(options, advanced_info_group, 'Упаковка'),
+            'Форма упаковки': '', # Нет данных
+            'Ставка НДС': '20' # или другое значение, если оно есть
+        }
         new_data.append(new_item)
     return new_data
 
 def create_excel_file(data):
     if not data: return None
     if not os.path.exists("downloads"): os.makedirs("downloads")
+    
     filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
     output_path = os.path.join("downloads", filename)
+    
     wb = Workbook()
     ws = wb.active
-    if not data: return output_path # Возвращаем пустой файл, если нет данных
-    headers = list(data[0].keys())
-    ws.append(headers)
-    for row_data in data:
-        row = [row_data.get(h, '') for h in headers]
-        ws.append(row)
+    
+    # Заголовки из первого элемента данных, если они есть
+    if data:
+        headers = list(data[0].keys())
+        ws.append(headers)
+        for row_data in data:
+            row = [row_data.get(h, '') for h in headers]
+            ws.append(row)
+            
     wb.save(output_path)
     return output_path
 
@@ -206,12 +277,14 @@ def create_excel_file(data):
 def find_options_by_group_name(grouped_options, group_name): 
     try: return next((g['options'] for g in grouped_options if g['group_name'] == group_name), [])
     except (TypeError, KeyError): return []
-def find_value_in_arrays(array1, array2, search_name):
-    for arr in [array1, array2]:
+
+def find_value_in_arrays(*arrays, search_name):
+    for arr in arrays:
         if not isinstance(arr, list): continue
         for item in arr: 
             if isinstance(item, dict) and item.get('name') == search_name: return item.get('value')
     return ''
+
 def extract_number(value):
     if not isinstance(value, str): return ''
     match = re.search(r'\d+(?:[.,]\d+)?', value)
