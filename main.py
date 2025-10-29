@@ -290,7 +290,7 @@ def create_excel_file(data):
     header_style_s2 = NamedStyle(name="header_style_s2")
     header_style_s2.fill = PatternFill(start_color="9A41FE", end_color="9A41FE", fill_type="solid")
     header_style_s2.font = Font(name='Calibri', size=12, bold=True, color="FFFFFF")
-    header_style_s2.alignment = Alignment(vertical='middle')
+    header_style_s2.alignment = Alignment(vertical='center')
 
     description_style_s3 = NamedStyle(name="description_style_s3")
     description_style_s3.fill = PatternFill(start_color="F0F0F3", end_color="F0F0F3", fill_type="solid")
