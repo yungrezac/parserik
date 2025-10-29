@@ -23,12 +23,9 @@
         .tab-button:not(.active) { color: #94a3b8; border-color: transparent; }
         .tab-button:not(.active):hover { color: #e2e8f0; border-color: #475569; }
         .nav-button { transition: all 0.2s ease-in-out; }
-        .nav-button.active svg { color: #60a5fa; }
-        .nav-button.active span { color: #60a5fa; }
-        .nav-button:not(.active) svg { color: #94a3b8; }
-        .nav-button:not(.active) span { color: #94a3b8; }
+        .nav-button.active svg, .nav-button.active span { color: #60a5fa; }
+        .nav-button:not(.active) svg, .nav-button:not(.active) span { color: #94a3b8; }
         .nav-button:not(.active):hover svg, .nav-button:not(.active):hover span { color: #e2e8f0; }
-        /* Add padding to the bottom of the main content to avoid overlap with the fixed navbar */
         #app-container { padding-bottom: 100px; }
     </style>
 </head>
@@ -36,35 +33,51 @@
     <div class="min-h-screen w-full bg-gradient-to-br from-slate-900 to-blue-900/50">
         <div id="app-container" class="w-full max-w-4xl mx-auto p-4">
 
-            <!-- === INPUT SECTION === -->
-            <div id="input-section" class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
-                <div class="text-center mb-6">
-                    <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">holly parser</h1>
-                    <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Выбери способ ввода данных</p>
-                </div>
-                <div class="mb-6 border-b border-slate-700">
-                    <nav class="-mb-px flex space-x-4 md:space-x-6 justify-center" aria-label="Tabs">
-                        <button id="tab-url" type="button" class="tab-button active whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ссылке</button>
-                        <button id="tab-id" type="button" class="tab-button whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ID</button>
-                    </nav>
-                </div>
-                <form id="parser-form" class="space-y-4">
-                    <div id="tab-content-url">
-                        <input type="text" id="url-input" placeholder="https://www.wildberries.ru/seller/105413?sort=popular&page=1&fbrand=208803" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <!-- === MAIN CONTENT: PARSER / SEARCH === -->
+            <div id="parser-section" class="main-section">
+                <div class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
+                    <div class="text-center mb-6">
+                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Holly Parser</h1>
+                        <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Анализ товаров по ID или ссылке</p>
                     </div>
-                    <div id="tab-content-id" class="hidden space-y-4">
-                        <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                        <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    <div class="mb-6 border-b border-slate-700">
+                        <nav class="-mb-px flex space-x-4 md:space-x-6 justify-center" aria-label="Tabs">
+                            <button id="tab-url" type="button" class="tab-button active whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ссылке</button>
+                            <button id="tab-id" type="button" class="tab-button whitespace-nowrap py-3 px-2 border-b-2 font-semibold text-base md:text-lg">По ID</button>
+                        </nav>
                     </div>
-                    <button type="submit" id="run-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Запустить анализ</button>
-                </form>
+                    <form id="parser-form" class="space-y-4">
+                        <div id="tab-content-url">
+                            <input type="text" id="url-input" placeholder="https://www.wildberries.ru/seller/105413?sort=popular&page=1&fbrand=208803" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        </div>
+                        <div id="tab-content-id" class="hidden space-y-4">
+                            <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                            <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        </div>
+                        <button type="submit" id="run-parser-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Запустить анализ</button>
+                    </form>
+                </div>
             </div>
+
+            <div id="search-section" class="main-section hidden">
+                 <div class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
+                    <div class="text-center mb-6">
+                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Holly Search</h1>
+                        <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Поиск до 1000 товаров по ключевому слову</p>
+                    </div>
+                    <form id="search-form" class="space-y-4">
+                         <input type="text" id="search-keyword-input" placeholder="Введите ключевое слово..." class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                         <button type="submit" id="run-search-button" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Найти товары</button>
+                    </form>
+                </div>
+            </div>
+
             
-            <!-- Other sections (progress, error, result) -->
+            <!-- === UNIVERSAL SECTIONS (Progress, Error, Result) === -->
             <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8 mt-8">
-                <h2 class="text-xl md:text-2xl font-bold text-center text-white">Анализ данных...</h2>
+                <h2 id="progress-title" class="text-xl md:text-2xl font-bold text-center text-white">Анализ данных...</h2>
                 <p id="progress-item-name" class="text-center text-slate-400 h-6 mt-2 truncate"></p>
-                <div class="mt-6 w-full bg-slate-700 rounded-full h-4"><div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
+                <div class="mt-6 w-full bg-slate-700 rounded-full h-4"><div id="progress-bar" class="h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
                 <p id="progress-label" class="text-center text-slate-300 mt-3 font-medium"></p>
             </div>
             <div id="error-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8 text-center">
@@ -74,9 +87,9 @@
             </div>
             <div id="result-section" class="hidden mt-8">
                  <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-                    <h2 class="text-2xl md:text-3xl font-bold text-white">Результаты Анализа</h2>
+                    <h2 class="text-2xl md:text-3xl font-bold text-white">Результаты</h2>
                     <div class="mt-4 md:mt-0 flex space-x-2">
-                         <button id="new-parse-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Новый анализ</button>
+                         <button id="new-analysis-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Новый анализ</button>
                          <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Скачать Excel</button>
                     </div>
                 </div>
@@ -88,11 +101,11 @@
     <!-- === BOTTOM NAVBAR === -->
     <nav id="bottom-navbar" class="fixed bottom-0 left-0 right-0 h-20 glass-card border-t border-slate-700 z-50">
         <div class="max-w-4xl mx-auto h-full flex justify-around items-center">
-            <button class="nav-button active flex flex-col items-center justify-center space-y-1">
+            <button id="nav-parser" class="nav-button active flex flex-col items-center justify-center space-y-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 <span class="text-xs font-medium">Парсер</span>
             </button>
-            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+            <button id="nav-search" class="nav-button flex flex-col items-center justify-center space-y-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <span class="text-xs font-medium">Поиск</span>
             </button>
@@ -115,28 +128,31 @@
     <div id="modal-placeholder" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 fade-in">
         <div class="glass-card rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm">
             <h3 class="text-2xl font-bold text-white">В разработке</h3>
-            <p class="mt-4 text-slate-300">Холи эта функция скоро появится, Я усердно работаю, чтобы сделать приложение еще лучше!</p>
+            <p class="mt-4 text-slate-300">Эта функция скоро появится. Я усердно работаю, чтобы сделать приложение еще лучше!</p>
             <button id="modal-close-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Понятно</button>
         </div>
     </div>
 
     <script>
         // === UI Elements ===
+        const parserSection = document.getElementById('parser-section');
+        const searchSection = document.getElementById('search-section');
         const parserForm = document.getElementById('parser-form');
-        const inputSection = document.getElementById('input-section');
+        const searchForm = document.getElementById('search-form');
         const progressSection = document.getElementById('progress-section');
         const errorSection = document.getElementById('error-section');
         const resultSection = document.getElementById('result-section');
         const tryAgainButton = document.getElementById('try-again-button');
-        const newParseButton = document.getElementById('new-parse-button');
+        const newAnalysisButton = document.getElementById('new-analysis-button');
         const downloadButton = document.getElementById('download-button');
         const progressBar = document.getElementById('progress-bar');
         const progressLabel = document.getElementById('progress-label');
+        const progressTitle = document.getElementById('progress-title');
         const progressItemName = document.getElementById('progress-item-name');
         const errorMessage = document.getElementById('error-message');
         const resultTable = document.getElementById('result-table');
 
-        // === Tab Elements ===
+        // === Parser Tab Elements ===
         const tabUrl = document.getElementById('tab-url');
         const tabId = document.getElementById('tab-id');
         const tabContentUrl = document.getElementById('tab-content-url');
@@ -145,20 +161,31 @@
         const sellerIdInput = document.getElementById('seller-id-input');
         const brandIdInput = document.getElementById('brand-id-input');
 
+        // === Search Elements ===
+        const searchKeywordInput = document.getElementById('search-keyword-input');
+
+        // === Navbar Elements ===
+        const navParser = document.getElementById('nav-parser');
+        const navSearch = document.getElementById('nav-search');
+
         // === Modal Elements ===
         const modalPlaceholder = document.getElementById('modal-placeholder');
         const modalCloseButton = document.getElementById('modal-close-button');
         const modalTriggers = document.querySelectorAll('[data-modal-trigger]');
 
         let eventSource;
-        let activeTab = 'url';
+        let activeTab = 'parser'; // Can be 'parser' or 'search'
+        let activeParserTab = 'url';
 
         // === Event Handlers ===
-        parserForm.addEventListener('submit', startParsing);
+        parserForm.addEventListener('submit', startParser);
+        searchForm.addEventListener('submit', startSearch);
         tryAgainButton.addEventListener('click', resetUI);
-        newParseButton.addEventListener('click', resetUI);
-        tabUrl.addEventListener('click', () => switchTab('url'));
-        tabId.addEventListener('click', () => switchTab('id'));
+        newAnalysisButton.addEventListener('click', resetUI);
+        tabUrl.addEventListener('click', () => switchParserTab('url'));
+        tabId.addEventListener('click', () => switchParserTab('id'));
+        navParser.addEventListener('click', () => switchMainTab('parser'));
+        navSearch.addEventListener('click', () => switchMainTab('search'));
         modalCloseButton.addEventListener('click', hideModal);
         modalPlaceholder.addEventListener('click', (e) => { if(e.target === modalPlaceholder) hideModal(); });
         modalTriggers.forEach(trigger => trigger.addEventListener('click', showModal));
@@ -168,8 +195,18 @@
         function hideModal() { modalPlaceholder.classList.add('hidden'); }
 
         // === Tab Logic ===
-        function switchTab(tabName) {
+        function switchMainTab(tabName) {
             activeTab = tabName;
+            const isParserTab = tabName === 'parser';
+            parserSection.classList.toggle('hidden', !isParserTab);
+            searchSection.classList.toggle('hidden', isParserTab);
+            navParser.classList.toggle('active', isParserTab);
+            navSearch.classList.toggle('active', !isParserTab);
+            resetUI(); 
+        }
+
+        function switchParserTab(tabName) {
+            activeParserTab = tabName;
             const isUrlTab = tabName === 'url';
             tabUrl.classList.toggle('active', isUrlTab);
             tabId.classList.toggle('active', !isUrlTab);
@@ -179,27 +216,35 @@
 
         // === Core App Logic ===
         function setUIState(state) {
-            inputSection.classList.toggle('hidden', state !== 'input');
-            progressSection.classList.toggle('hidden', state !== 'progress');
-            errorSection.classList.toggle('hidden', state !== 'error');
-            resultSection.classList.toggle('hidden', state !== 'result');
+            const showInput = state === 'input';
+            document.querySelectorAll('.main-section').forEach(s => s.classList.add('hidden'));
+
+            if (showInput) {
+                if (activeTab === 'parser') parserSection.classList.remove('hidden');
+                else searchSection.classList.remove('hidden');
+            } else {
+                progressSection.classList.toggle('hidden', state !== 'progress');
+                errorSection.classList.toggle('hidden', state !== 'error');
+                resultSection.classList.toggle('hidden', state !== 'result');
+            }
         }
 
         function resetUI() {
             if (eventSource) eventSource.close();
             setUIState('input');
             parserForm.reset();
+            searchForm.reset();
             progressBar.style.width = '0%';
             progressLabel.textContent = '';
             progressItemName.textContent = '';
-            switchTab('url');
+            switchParserTab('url');
         }
-
-        function startParsing(event) {
+        
+        function startParser(event) {
             event.preventDefault();
             let inputStr = '';
 
-            if (activeTab === 'url') {
+            if (activeParserTab === 'url') {
                 inputStr = urlInput.value.trim();
             } else {
                 const sellerId = sellerIdInput.value.trim();
@@ -216,9 +261,33 @@
                 showError("Поле ввода не может быть пустым.");
                 return;
             }
+            
+            setUIState('progress');
+            progressTitle.textContent = "Анализ по ID/ссылке...";
+            progressBar.className = 'h-4 rounded-full progress-bar-inner bg-gradient-to-r from-green-400 to-blue-500'; // Parser color
+
+            eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
+            eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
+            eventSource.onerror = () => {
+                showError("Ошибка соединения с сервером.");
+                if(eventSource) eventSource.close();
+            };
+        }
+
+        function startSearch(event) {
+            event.preventDefault();
+            const keyword = searchKeywordInput.value.trim();
+            if (!keyword) {
+                showError("Введите ключевое слово для поиска.");
+                return;
+            }
 
             setUIState('progress');
-            eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
+            progressTitle.textContent = "Поиск по ключевому слову...";
+            progressBar.className = 'h-4 rounded-full progress-bar-inner bg-gradient-to-r from-purple-500 to-pink-500'; // Search color
+
+
+            eventSource = new EventSource(`/search?${new URLSearchParams({keyword: keyword}).toString()}`);
             eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
             eventSource.onerror = () => {
                 showError("Ошибка соединения с сервером.");
@@ -259,7 +328,10 @@
         function displayResults(tableData) {
             const table = resultTable;
             table.innerHTML = '';
-            if (!tableData || tableData.length === 0) return;
+            if (!tableData || tableData.length === 0) {
+                 table.innerHTML = '<thead><tr><th class="px-5 py-3 text-center text-sm font-semibold text-slate-300">Нет данных для отображения</th></tr></thead>';
+                 return;
+            }
 
             const headers = Object.keys(tableData[0]);
             const thead = document.createElement('thead');
@@ -280,7 +352,17 @@
                 tr.className = 'hover:bg-slate-700/50';
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    td.textContent = rowData[header] ?? '';
+                    let content = rowData[header] ?? '';
+                    // Check if the header is 'Фото' and content is a URL
+                    if (header === 'Фото' && typeof content === 'string' && content.startsWith('http')) {
+                        const img = document.createElement('img');
+                        img.src = content.split(';')[0]; // Show first image
+                        img.className = 'h-12 w-12 object-cover rounded';
+                        img.alt = 'Фото товара';
+                        td.appendChild(img);
+                    } else {
+                        td.textContent = content;
+                    }
                     td.className = 'px-5 py-4 whitespace-nowrap text-sm text-slate-200';
                     tr.appendChild(td);
                 });
@@ -290,7 +372,7 @@
         }
 
         // Initial UI setup
-        resetUI();
+        switchMainTab('parser'); // Start with the parser tab
     </script>
 </body>
 </html>
