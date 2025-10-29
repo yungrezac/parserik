@@ -215,37 +215,37 @@ def map_data(data):
             'Фото': ', '.join(photo_urls),
             'Видео': video_url,
             'Полное наименование товара': advanced.get('name', ''),
-            'Состав': find_value_in_arrays(options, advanced_info_group, 'Состав'),
+            'Состав': find_value_in_arrays(options, advanced_info_group, search_name='Состав'),
             'Баркод': '', # Нет данных
-            'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, 'Вес с упаковкой (кг)')),
-            'Вес товара без упаковки (г)': extract_number(find_value_in_arrays(options, dimensions_group, 'Вес товара без упаковки (г)')),
-            'Высота упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Высота упаковки')),
-            'Длина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Длина упаковки')),
-            'Ширина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, 'Ширина упаковки')),
+            'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес с упаковкой (кг)')),
+            'Вес товара без упаковки (г)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес товара без упаковки (г)')),
+            'Высота упаковки': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Высота упаковки')),
+            'Длина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Длина упаковки')),
+            'Ширина упаковки': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Ширина упаковки')),
             'Дата окончания действия сертификата/декларации': cert_end_date,
             'Дата регистрации сертификата/декларации': cert_reg_date,
             'Номер декларации соответствия': declaration_num,
             'Номер сертификата соответствия': certificate_num,
             'Свидетельство о регистрации СГР': sgr_num,
-            'SPF': find_value_in_arrays(options, cosmetics_group, 'SPF'),
+            'SPF': find_value_in_arrays(options, cosmetics_group, search_name='SPF'),
             'Артикул OZON': '', # Нет данных
-            'Возрастные ограничения': find_value_in_arrays(options, advanced_info_group, 'Возрастные ограничения'),
-            'Время нанесения': find_value_in_arrays(options, cosmetics_group, 'Время нанесения'),
-            'Действие': find_value_in_arrays(options, cosmetics_group, 'Действие'),
+            'Возрастные ограничения': find_value_in_arrays(options, advanced_info_group, search_name='Возрастные ограничения'),
+            'Время нанесения': find_value_in_arrays(options, cosmetics_group, search_name='Время нанесения'),
+            'Действие': find_value_in_arrays(options, cosmetics_group, search_name='Действие'),
             'ИКПУ': '', # Нет данных
             'Код упаковки': '', # Нет данных
-            'Комплектация': find_value_in_arrays(options, advanced_info_group, 'Комплектация'),
-            'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, 'Назначение косметического средства'),
+            'Комплектация': find_value_in_arrays(options, advanced_info_group, search_name='Комплектация'),
+            'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, search_name='Назначение косметического средства'),
             'Назначение подарка': '', # Нет данных
-            'Объем товара': find_value_in_arrays(options, cosmetics_group, 'Объем товара'),
+            'Объем товара': find_value_in_arrays(options, cosmetics_group, search_name='Объем товара'),
             'Повод': '', # Нет данных
             'Раздел меню': '', # Нет данных
-            'Срок годности': find_value_in_arrays(options, advanced_info_group, 'Срок годности'),
-            'Страна производства': find_value_in_arrays(options, advanced_info_group, 'Страна производства'),
-            'ТНВЭД': find_value_in_arrays(options, advanced_info_group, 'ТН ВЭД'),
+            'Срок годности': find_value_in_arrays(options, advanced_info_group, search_name='Срок годности'),
+            'Страна производства': find_value_in_arrays(options, advanced_info_group, search_name='Страна производства'),
+            'ТНВЭД': find_value_in_arrays(options, advanced_info_group, search_name='ТН ВЭД'),
             'Тип доставки': '', # Нет данных
-            'Тип кожи': find_value_in_arrays(options, cosmetics_group, 'Тип кожи'),
-            'Упаковка': find_value_in_arrays(options, advanced_info_group, 'Упаковка'),
+            'Тип кожи': find_value_in_arrays(options, cosmetics_group, search_name='Тип кожи'),
+            'Упаковка': find_value_in_arrays(options, advanced_info_group, search_name='Упаковка'),
             'Форма упаковки': '', # Нет данных
             'Ставка НДС': '20' # или другое значение, если оно есть
         }
