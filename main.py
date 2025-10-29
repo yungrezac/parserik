@@ -25,6 +25,30 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
 }
 
+def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
+    """Надежная функция для выполнения HTTP-запросов с повторными попытками."""
+    for i in range(retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=timeout)
+            response.raise_for_status() # Вызовет исключение для кодов 4xx/5xx
+            return response
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                sleep_time = backoff_factor * (2 ** i) + random.uniform(0, 1)
+                time.sleep(sleep_time)
+                continue
+            else:
+                # Для других ошибок HTTP, можно просто прекратить попытки
+                raise e
+        except requests.exceptions.RequestException as e:
+            # Для сетевых ошибок (timeout, connection error) также попробуем еще раз
+            sleep_time = backoff_factor * (2 ** i) + random.uniform(0, 1)
+            time.sleep(sleep_time)
+            continue
+    # Если все попытки не увенчались успехом
+    raise Exception(f"Не удалось получить данные после {retries} попыток. URL: {url}")
+
+
 # --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССА ---
 def stream_parser(seller_id, brand_id):
     """
@@ -40,11 +64,10 @@ def stream_parser(seller_id, brand_id):
     # 2. Определение общего количества товаров
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
     try:
-        response_total = requests.get(url_total_list, headers=headers, timeout=10)
-        response_total.raise_for_status()
+        response_total = make_request(url_total_list, headers=headers)
         res_total = response_total.json()
         products_total = res_total.get('data', {}).get('total', 0)
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+    except (requests.exceptions.RequestException, json.JSONDecodeError, Exception) as e:
         raise Exception(f"Критическая ошибка при получении общего числа товаров: {e}")
 
     if not products_total:
@@ -58,24 +81,22 @@ def stream_parser(seller_id, brand_id):
     while current_page <= pages_count:
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
         try:
-            response = requests.get(url_list, headers=headers, timeout=10)
-            response.raise_for_status()
+            response = make_request(url_list, headers=headers)
             products_on_page = response.json().get('products', [])
         except (requests.exceptions.RequestException, json.JSONDecodeError):
             current_page += 1
-            continue # Пропускаем страницу в случае ошибки
+            time.sleep(random.uniform(1, 3)) # Добавим задержку при ошибке на странице
+            continue
 
         for item in products_on_page:
             count += 1
             yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')})
             
-            # ... (логика получения доп. информации по каждому товару) ...
-            # Эта часть остается такой же, как в fetch_data
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             backetNumber, isAutoServer = 1, bool(backetName)
             while True:
-                if not isAutoServer and backetNumber > 12: # Уменьшаем количество попыток для ускорения
+                if not isAutoServer and backetNumber > 12:
                     item['advanced'] = {}
                     break
                 
@@ -83,6 +104,7 @@ def stream_parser(seller_id, brand_id):
                 urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 
                 try:
+                    # Используем более короткий таймаут для карточек, но без повторных попыток, чтобы не замедлять
                     productResponse = requests.get(urlItem, headers=headers, timeout=3)
                     if productResponse.status_code == 200:
                         item['advanced'] = productResponse.json()
@@ -96,11 +118,14 @@ def stream_parser(seller_id, brand_id):
                     item['advanced'] = {}
                     break
             all_products.append(item)
+            time.sleep(random.uniform(0.1, 0.4)) # Небольшая задержка между товарами
+
         current_page += 1
+        time.sleep(random.uniform(1, 2)) # Задержка между страницами
 
     # 4. Маппинг данных и создание файла
     yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'})
-    mapped_data = map_data(all_products)
+    mapped_data = map_data(all_products, baskets) # Передаем baskets в map_data
 
     yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
     output_path = create_excel_file(mapped_data)
@@ -142,81 +167,67 @@ def parse_input(input_str):
 
 def get_mediabasket_route_map():
     try:
-        response = requests.get('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers, timeout=5)
-        response.raise_for_status()
+        response = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers, timeout=5)
         data = response.json()
         if 'recommend' in data and 'mediabasket_route_map' in data['recommend']:
             return data['recommend']['mediabasket_route_map'][0]['hosts']
-    except requests.exceptions.RequestException: return []
+    except (requests.exceptions.RequestException, json.JSONDecodeError, KeyError):
+        return []
     return []
 
 def get_host_by_range(range_value, route_map):
     if not isinstance(route_map, list): return ''
     for host_info in route_map: 
-        if host_info['vol_range_from'] <= range_value <= host_info['vol_range_to']: return host_info['host']
+        if 'vol_range_from' in host_info and 'vol_range_to' in host_info and host_info['vol_range_from'] <= range_value <= host_info['vol_range_to']: 
+            return host_info['host']
     return ''
 
-def map_data(data):
+def map_data(data, baskets):
     new_data = []
     for item in data:
         advanced = item.get('advanced')
         if not advanced: continue
         
-        # Получаем опции и группы опций
         options = advanced.get('options', [])
         grouped_options = advanced.get('grouped_options', [])
         
-        # Ищем нужные группы
         dimensions_group = find_options_by_group_name(grouped_options, 'Габариты')
         advanced_info_group = find_options_by_group_name(grouped_options, 'Дополнительная информация')
         cosmetics_group = find_options_by_group_name(grouped_options, 'Косметическое средство')
 
-        # Формируем фото и видео
         photo_urls = []
         video_url = ''
         if item.get('id'):
             product_id_str = str(item['id'])
-            host = get_host_by_range(int(product_id_str[:-5]), get_mediabasket_route_map())
+            host = get_host_by_range(int(product_id_str[:-5]), baskets)
             if host:
-                # Фото
-                for i in range(1, 11): # Предположим, что у товара до 10 фото
+                for i in range(1, 11):
                     photo_urls.append(f"https://{host}/vol{product_id_str[:-5]}/part{product_id_str[:-3]}/{product_id_str}/images/c516x688/{i}.jpg")
-                
-                # Видео (если есть)
-                # Логика для видео может быть сложнее, здесь упрощенный вариант
-                # video_url = f"https://{host}/vol{product_id_str[:-5]}/part{product_id_str[:-3]}/{product_id_str}/video/1.mp4"
-        
-        # Сертификаты
+
         certificates = advanced.get('certificates', [])
-        cert_end_date = ''
-        cert_reg_date = ''
-        declaration_num = ''
-        certificate_num = ''
-        sgr_num = ''
+        cert_end_date, cert_reg_date, declaration_num, certificate_num, sgr_num = '', '', '', '', ''
         if certificates:
             cert = certificates[0]
             cert_end_date = cert.get('end_date','')
             cert_reg_date = cert.get('start_date','')
-            # Логика для определения типа сертификата и номера
-            # Это упрощение, т.к. в API может быть несколько сертификатов разных типов
             if 'ЕАЭС' in cert.get('__name', ''):
                 declaration_num = cert.get('number', '')
             else:
                 certificate_num = cert.get('number', '')
 
         new_item = {
-            'Группа': '',  # Нет данных
+            'Группа': '', 
             'Артикул продавца': item.get('vendorCode', ''),
             'Артикул WB': item.get('id', ''),
             'Наименование': item.get('name', ''),
-            'Категория продавца': '', # Нет прямого аналога
+            'Категория продавца': '', 
             'Бренд': item.get('brand', ''),
             'Описание': advanced.get('description', ''),
             'Фото': ', '.join(photo_urls),
             'Видео': video_url,
             'Полное наименование товара': advanced.get('name', ''),
             'Состав': find_value_in_arrays(options, advanced_info_group, search_name='Состав'),
-            'Баркод': '', # Нет данных
+            'Баркод': '', 
             'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес с упаковкой (кг)')),
             'Вес товара без упаковки (г)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес товара без упаковки (г)')),
             'Высота упаковки': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Высота упаковки')),
@@ -228,26 +239,26 @@ def map_data(data):
             'Номер сертификата соответствия': certificate_num,
             'Свидетельство о регистрации СГР': sgr_num,
             'SPF': find_value_in_arrays(options, cosmetics_group, search_name='SPF'),
-            'Артикул OZON': '', # Нет данных
+            'Артикул OZON': '', 
             'Возрастные ограничения': find_value_in_arrays(options, advanced_info_group, search_name='Возрастные ограничения'),
             'Время нанесения': find_value_in_arrays(options, cosmetics_group, search_name='Время нанесения'),
             'Действие': find_value_in_arrays(options, cosmetics_group, search_name='Действие'),
-            'ИКПУ': '', # Нет данных
-            'Код упаковки': '', # Нет данных
+            'ИКПУ': '', 
+            'Код упаковки': '', 
             'Комплектация': find_value_in_arrays(options, advanced_info_group, search_name='Комплектация'),
             'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, search_name='Назначение косметического средства'),
-            'Назначение подарка': '', # Нет данных
+            'Назначение подарка': '', 
             'Объем товара': find_value_in_arrays(options, cosmetics_group, search_name='Объем товара'),
-            'Повод': '', # Нет данных
-            'Раздел меню': '', # Нет данных
+            'Повод': '', 
+            'Раздел меню': '', 
             'Срок годности': find_value_in_arrays(options, advanced_info_group, search_name='Срок годности'),
             'Страна производства': find_value_in_arrays(options, advanced_info_group, search_name='Страна производства'),
             'ТНВЭД': find_value_in_arrays(options, advanced_info_group, search_name='ТН ВЭД'),
-            'Тип доставки': '', # Нет данных
+            'Тип доставки': '', 
             'Тип кожи': find_value_in_arrays(options, cosmetics_group, search_name='Тип кожи'),
             'Упаковка': find_value_in_arrays(options, advanced_info_group, search_name='Упаковка'),
-            'Форма упаковки': '', # Нет данных
-            'Ставка НДС': '20' # или другое значение, если оно есть
+            'Форма упаковки': '', 
+            'Ставка НДС': '20'
         }
         new_data.append(new_item)
     return new_data
@@ -262,7 +273,6 @@ def create_excel_file(data):
     wb = Workbook()
     ws = wb.active
     
-    # Заголовки из первого элемента данных, если они есть
     if data:
         headers = list(data[0].keys())
         ws.append(headers)
