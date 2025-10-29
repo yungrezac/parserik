@@ -304,22 +304,44 @@ def create_excel_file(data):
 
     # --- Заголовки ---
     # Строка 1 - объединенные ячейки согласно требованиям
-    ws.append(['Основная информация'] + [''] * 8 + ['Размеры и Баркоды'] + ['Габариты'] + [''] * 4 + ['Документы'] + [''] * 4 + ['Дополнительная информация'] + [''] * 30 + ['Цены'] + [''])
+    # Создаем строку с правильным распределением текста по объединенным ячейкам
+    row1_data = [''] * 43  # Создаем пустую строку из 43 ячеек
+    
+    # Заполняем ячейки, которые будут объединены
+    ws.append(row1_data)
     
     # Объединение ячеек в строке 1
-    ws.merge_cells('A1:I1')  # Основная информация C - K (A-I в Excel)
-    ws.merge_cells('J1:J1')  # Размеры и Баркоды L (J в Excel)
-    ws.merge_cells('K1:O1')  # Габариты M - Q (K-O в Excel)
-    ws.merge_cells('P1:T1')  # Документы R - V (P-T в Excel)
-    ws.merge_cells('U1:AP1') # Дополнительная информация W - AP (U-AP в Excel)
-    ws.merge_cells('AQ1:AQ1') # Цены AQ (AQ в Excel)
+    ws.merge_cells('C1:K1')  # Основная информация C - K
+    ws.merge_cells('L1:L1')  # Размеры и Баркоды L
+    ws.merge_cells('M1:Q1')  # Габариты M - Q
+    ws.merge_cells('R1:V1')  # Документы R - V
+    ws.merge_cells('W1:AP1') # Дополнительная информация W - AP
+    ws.merge_cells('AQ1:AQ1') # Цены AQ
+    
+    # Заполняем объединенные ячейки текстом
+    ws['C1'] = 'Основная информация'
+    ws['L1'] = 'Размеры и Баркоды'
+    ws['M1'] = 'Габариты'
+    ws['R1'] = 'Документы'
+    ws['W1'] = 'Дополнительная информация'
+    ws['AQ1'] = 'Цены'
     
     for cell in ws[1]:
         cell.style = header_style_s0
     ws.row_dimensions[1].height = 41
 
-    # Строка 2 - пустая строка с тем же стилем
-    ws.append([''] * 43)
+    # Строка 2 - такое же объединение как в строке 1
+    row2_data = [''] * 43
+    ws.append(row2_data)
+    
+    # Объединение ячеек в строке 2 (такое же как в строке 1)
+    ws.merge_cells('C2:K2')  # Основная информация C - K
+    ws.merge_cells('L2:L2')  # Размеры и Баркоды L
+    ws.merge_cells('M2:Q2')  # Габариты M - Q
+    ws.merge_cells('R2:V2')  # Документы R - V
+    ws.merge_cells('W2:AP2') # Дополнительная информация W - AP
+    ws.merge_cells('AQ2:AQ2') # Цены AQ
+    
     for cell in ws[2]:
         cell.style = header_style_s1
     ws.row_dimensions[2].height = 63
