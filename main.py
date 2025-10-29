@@ -195,15 +195,6 @@ def map_data(data, baskets):
         advanced_info_group = find_options_by_group_name(grouped_options, 'Дополнительная информация')
         cosmetics_group = find_options_by_group_name(grouped_options, 'Косметическое средство')
 
-        photo_urls = []
-        video_url = ''
-        if item.get('id'):
-            product_id_str = str(item['id'])
-            host = get_host_by_range(int(product_id_str[:-5]), baskets)
-            if host:
-                for i in range(1, 11):
-                    photo_urls.append(f"https://{host}/vol{product_id_str[:-5]}/part{product_id_str[:-3]}/{product_id_str}/images/c516x688/{i}.jpg")
-
         certificates = advanced.get('certificates', [])
         cert_end_date, cert_reg_date, declaration_num, certificate_num, sgr_num = '', '', '', '', ''
         if certificates:
@@ -218,13 +209,13 @@ def map_data(data, baskets):
         new_item = {
             'Группа': '', 
             'Артикул продавца': item.get('vendorCode', ''),
-            'Артикул WB': item.get('id', ''),
+            'Артикул WB': '',  # Оставляем пустым
             'Наименование': item.get('name', ''),
             'Категория продавца': '', 
             'Бренд': item.get('brand', ''),
             'Описание': advanced.get('description', ''),
-            'Фото': ', '.join(photo_urls),
-            'Видео': video_url,
+            'Фото': '',  # Оставляем пустым
+            'Видео': '',  # Оставляем пустым
             'Полное наименование товара': advanced.get('name', ''),
             'Состав': find_value_in_arrays(options, advanced_info_group, search_name='Состав'),
             'Баркод': '', 
