@@ -1,0 +1,26 @@
+
+services:
+  # Веб-сервис для вашего Flask-приложения
+  - type: web
+    name: flask-app
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11  # Укажите вашу версию Python
+
+  # Фоновый воркер для вашего Telegram-бота
+  - type: worker
+    name: telegram-bot
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: TELEGRAM_TOKEN
+        fromService:
+          type: web
+          name: flask-app
+          envVarKey: TELEGRAM_TOKEN
