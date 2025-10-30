@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.5); }
@@ -18,10 +19,6 @@
         .progress-bar-inner { transition: width 0.3s ease-in-out; }
         .table-container { max-height: 60vh; }
         th { position: sticky; top: 0; background-color: #1e293b; z-index: 10; }
-        .tab-button { transition: all 0.2s ease-in-out; }
-        .tab-button.active { color: #60a5fa; border-color: #3b82f6; }
-        .tab-button:not(.active) { color: #94a3b8; border-color: transparent; }
-        .tab-button:not(.active):hover { color: #e2e8f0; border-color: #475569; }
         .nav-button { transition: all 0.2s ease-in-out; }
         .nav-button.active svg, .nav-button.active span { color: #60a5fa; }
         .nav-button:not(.active) svg, .nav-button:not(.active) span { color: #94a3b8; }
@@ -33,12 +30,12 @@
     <div class="min-h-screen w-full bg-gradient-to-br from-slate-900 to-blue-900/50">
         <div id="app-container" class="w-full max-w-4xl mx-auto p-4">
 
-            <!-- === MAIN CONTENT: PARSER / SEARCH === -->
-            <div id="parser-section" class="main-section">
-                <div class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
+            <!-- === MAIN PARSER SECTION === -->
+            <div id="parser-section">
+                <div id="input-section" class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
                     <div class="text-center mb-6">
-                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Holly Parser</h1>
-                        <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Анализ товаров по ID или ссылке</p>
+                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">holly parser</h1>
+                        <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Выбери способ ввода данных</p>
                     </div>
                     <div class="mb-6 border-b border-slate-700">
                         <nav class="-mb-px flex space-x-4 md:space-x-6 justify-center" aria-label="Tabs">
@@ -54,46 +51,43 @@
                             <input type="text" id="seller-id-input" placeholder="ID Продавца (например, 1170679)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                             <input type="text" id="brand-id-input" placeholder="ID Бренда (например, 310745472)" class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                         </div>
-                        <button type="submit" id="run-parser-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Запустить анализ</button>
+                        <button type="submit" id="run-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Запустить анализ</button>
                     </form>
+                </div>
+                <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8 mt-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-center text-white">Анализ данных...</h2>
+                    <p id="progress-item-name" class="text-center text-slate-400 h-6 mt-2 truncate"></p>
+                    <div class="mt-6 w-full bg-slate-700 rounded-full h-4"><div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
+                    <p id="progress-label" class="text-center text-slate-300 mt-3 font-medium"></p>
+                </div>
+                <div id="error-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8 text-center">
+                    <h2 class="text-2xl font-bold text-red-400">Произошла ошибка</h2>
+                    <p id="error-message" class="mt-4 text-slate-300"></p>
+                    <button id="try-again-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
+                </div>
+                <div id="result-section" class="hidden mt-8">
+                     <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                        <h2 class="text-2xl md:text-3xl font-bold text-white">Результаты Анализа</h2>
+                        <div class="mt-4 md:mt-0 flex space-x-2">
+                             <button id="add-to-favorites-button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">В избранное</button>
+                             <button id="new-parse-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Новый анализ</button>
+                             <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Скачать Excel</button>
+                        </div>
+                    </div>
+                    <div class="table-container glass-card rounded-lg overflow-x-auto"><table id="result-table" class="min-w-full divide-y divide-slate-700"></table></div>
                 </div>
             </div>
 
-            <div id="search-section" class="main-section hidden">
-                 <div class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 slide-in-fwd">
-                    <div class="text-center mb-6">
-                        <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight">Holly Search</h1>
-                        <p class="mt-2 md:mt-3 text-base md:text-lg text-slate-400">Поиск до 1000 товаров по ключевому слову</p>
-                    </div>
-                    <form id="search-form" class="space-y-4">
-                         <input type="text" id="search-keyword-input" placeholder="Введите ключевое слово..." class="w-full p-3 md:p-4 bg-slate-900/50 border-2 border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                         <button type="submit" id="run-search-button" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300">Найти товары</button>
-                    </form>
-                </div>
+            <!-- === HISTORY SECTION === -->
+            <div id="history-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">История</h2>
+                <div id="history-list" class="space-y-4"></div>
             </div>
 
-            
-            <!-- === UNIVERSAL SECTIONS (Progress, Error, Result) === -->
-            <div id="progress-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8 mt-8">
-                <h2 id="progress-title" class="text-xl md:text-2xl font-bold text-center text-white">Анализ данных...</h2>
-                <p id="progress-item-name" class="text-center text-slate-400 h-6 mt-2 truncate"></p>
-                <div class="mt-6 w-full bg-slate-700 rounded-full h-4"><div id="progress-bar" class="h-4 rounded-full progress-bar-inner" style="width: 0%"></div></div>
-                <p id="progress-label" class="text-center text-slate-300 mt-3 font-medium"></p>
-            </div>
-            <div id="error-section" class="hidden glass-card rounded-2xl shadow-2xl p-8 mt-8 text-center">
-                <h2 class="text-2xl font-bold text-red-400">Произошла ошибка</h2>
-                <p id="error-message" class="mt-4 text-slate-300"></p>
-                <button id="try-again-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Попробовать снова</button>
-            </div>
-            <div id="result-section" class="hidden mt-8">
-                 <div class="flex flex-col md:flex-row justify-between items-center mb-4">
-                    <h2 class="text-2xl md:text-3xl font-bold text-white">Результаты</h2>
-                    <div class="mt-4 md:mt-0 flex space-x-2">
-                         <button id="new-analysis-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Новый анализ</button>
-                         <button id="download-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm md:text-base">Скачать Excel</button>
-                    </div>
-                </div>
-                <div class="table-container glass-card rounded-lg overflow-x-auto"><table id="result-table" class="min-w-full divide-y divide-slate-700"></table></div>
+            <!-- === FAVORITES SECTION === -->
+            <div id="favorites-section" class="hidden glass-card rounded-2xl shadow-2xl p-6 md:p-8">
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">Избранное</h2>
+                <div id="favorites-list" class="space-y-4"></div>
             </div>
         </div>
     </div>
@@ -102,57 +96,57 @@
     <nav id="bottom-navbar" class="fixed bottom-0 left-0 right-0 h-20 glass-card border-t border-slate-700 z-50">
         <div class="max-w-4xl mx-auto h-full flex justify-around items-center">
             <button id="nav-parser" class="nav-button active flex flex-col items-center justify-center space-y-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                <span class="text-xs font-medium">Парсер</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span class="text-xs font-medium">Главная</span>
             </button>
-            <button id="nav-search" class="nav-button flex flex-col items-center justify-center space-y-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <span class="text-xs font-medium">Поиск</span>
+            <button id="nav-history" class="nav-button flex flex-col items-center justify-center space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span class="text-xs font-medium">История</span>
             </button>
-            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                <span class="text-xs font-medium">Топ</span>
-            </button>
-            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
+            <button id="nav-favorites" class="nav-button flex flex-col items-center justify-center space-y-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                 <span class="text-xs font-medium">Избранное</span>
-            </button>
-            <button data-modal-trigger class="nav-button flex flex-col items-center justify-center space-y-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                <span class="text-xs font-medium">Профиль</span>
             </button>
         </div>
     </nav>
 
-    <!-- === MODAL PLACEHOLDER === -->
-    <div id="modal-placeholder" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 fade-in">
-        <div class="glass-card rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm">
-            <h3 class="text-2xl font-bold text-white">В разработке</h3>
-            <p class="mt-4 text-slate-300">Эта функция скоро появится. Я усердно работаю, чтобы сделать приложение еще лучше!</p>
-            <button id="modal-close-button" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Понятно</button>
-        </div>
-    </div>
-
     <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
         // === UI Elements ===
         const parserSection = document.getElementById('parser-section');
-        const searchSection = document.getElementById('search-section');
-        const parserForm = document.getElementById('parser-form');
-        const searchForm = document.getElementById('search-form');
+        const historySection = document.getElementById('history-section');
+        const favoritesSection = document.getElementById('favorites-section');
+        
+        const inputSection = document.getElementById('input-section');
         const progressSection = document.getElementById('progress-section');
         const errorSection = document.getElementById('error-section');
         const resultSection = document.getElementById('result-section');
+        
+        const parserForm = document.getElementById('parser-form');
         const tryAgainButton = document.getElementById('try-again-button');
-        const newAnalysisButton = document.getElementById('new-analysis-button');
+        const newParseButton = document.getElementById('new-parse-button');
         const downloadButton = document.getElementById('download-button');
+        const addToFavoritesButton = document.getElementById('add-to-favorites-button');
+        
         const progressBar = document.getElementById('progress-bar');
         const progressLabel = document.getElementById('progress-label');
-        const progressTitle = document.getElementById('progress-title');
         const progressItemName = document.getElementById('progress-item-name');
         const errorMessage = document.getElementById('error-message');
         const resultTable = document.getElementById('result-table');
 
-        // === Parser Tab Elements ===
+        const historyList = document.getElementById('history-list');
+        const favoritesList = document.getElementById('favorites-list');
+
+        // === Nav Elements ===
+        const navButtons = {
+            parser: document.getElementById('nav-parser'),
+            history: document.getElementById('nav-history'),
+            favorites: document.getElementById('nav-favorites'),
+        };
+
+        // === Tab Elements ===
         const tabUrl = document.getElementById('tab-url');
         const tabId = document.getElementById('tab-id');
         const tabContentUrl = document.getElementById('tab-content-url');
@@ -161,52 +155,47 @@
         const sellerIdInput = document.getElementById('seller-id-input');
         const brandIdInput = document.getElementById('brand-id-input');
 
-        // === Search Elements ===
-        const searchKeywordInput = document.getElementById('search-keyword-input');
-
-        // === Navbar Elements ===
-        const navParser = document.getElementById('nav-parser');
-        const navSearch = document.getElementById('nav-search');
-
-        // === Modal Elements ===
-        const modalPlaceholder = document.getElementById('modal-placeholder');
-        const modalCloseButton = document.getElementById('modal-close-button');
-        const modalTriggers = document.querySelectorAll('[data-modal-trigger]');
-
         let eventSource;
-        let activeTab = 'parser'; // Can be 'parser' or 'search'
-        let activeParserTab = 'url';
+        let activeTab = 'url';
+        let currentResult = null;
 
         // === Event Handlers ===
-        parserForm.addEventListener('submit', startParser);
-        searchForm.addEventListener('submit', startSearch);
-        tryAgainButton.addEventListener('click', resetUI);
-        newAnalysisButton.addEventListener('click', resetUI);
-        tabUrl.addEventListener('click', () => switchParserTab('url'));
-        tabId.addEventListener('click', () => switchParserTab('id'));
-        navParser.addEventListener('click', () => switchMainTab('parser'));
-        navSearch.addEventListener('click', () => switchMainTab('search'));
-        modalCloseButton.addEventListener('click', hideModal);
-        modalPlaceholder.addEventListener('click', (e) => { if(e.target === modalPlaceholder) hideModal(); });
-        modalTriggers.forEach(trigger => trigger.addEventListener('click', showModal));
+        parserForm.addEventListener('submit', startParsing);
+        tryAgainButton.addEventListener('click', () => showMainScreen('input'));
+        newParseButton.addEventListener('click', () => showMainScreen('input'));
+        addToFavoritesButton.addEventListener('click', addToFavorites);
 
-        // === Modal Logic ===
-        function showModal() { modalPlaceholder.classList.remove('hidden'); }
-        function hideModal() { modalPlaceholder.classList.add('hidden'); }
+        Object.keys(navButtons).forEach(key => {
+            navButtons[key].addEventListener('click', () => navigate(key));
+        });
+        
+        tabUrl.addEventListener('click', () => switchInputTab('url'));
+        tabId.addEventListener('click', () => switchInputTab('id'));
 
-        // === Tab Logic ===
-        function switchMainTab(tabName) {
-            activeTab = tabName;
-            const isParserTab = tabName === 'parser';
-            parserSection.classList.toggle('hidden', !isParserTab);
-            searchSection.classList.toggle('hidden', isParserTab);
-            navParser.classList.toggle('active', isParserTab);
-            navSearch.classList.toggle('active', !isParserTab);
-            resetUI(); 
+        // === Navigation ===
+        function navigate(screen) {
+            parserSection.classList.add('hidden');
+            historySection.classList.add('hidden');
+            favoritesSection.classList.add('hidden');
+            
+            Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+            
+            if(screen === 'parser') parserSection.classList.remove('hidden');
+            if(screen === 'history') {
+                historySection.classList.remove('hidden');
+                renderHistory();
+            }
+            if(screen === 'favorites') {
+                favoritesSection.classList.remove('hidden');
+                renderFavorites();
+            }
+            
+            navButtons[screen].classList.add('active');
         }
 
-        function switchParserTab(tabName) {
-            activeParserTab = tabName;
+        // === Input Tab Logic ===
+        function switchInputTab(tabName) {
+            activeTab = tabName;
             const isUrlTab = tabName === 'url';
             tabUrl.classList.toggle('active', isUrlTab);
             tabId.classList.toggle('active', !isUrlTab);
@@ -214,37 +203,32 @@
             tabContentId.classList.toggle('hidden', isUrlTab);
         }
 
-        // === Core App Logic ===
-        function setUIState(state) {
-            const showInput = state === 'input';
-            document.querySelectorAll('.main-section').forEach(s => s.classList.add('hidden'));
-
-            if (showInput) {
-                if (activeTab === 'parser') parserSection.classList.remove('hidden');
-                else searchSection.classList.remove('hidden');
-            } else {
-                progressSection.classList.toggle('hidden', state !== 'progress');
-                errorSection.classList.toggle('hidden', state !== 'error');
-                resultSection.classList.toggle('hidden', state !== 'result');
-            }
-        }
-
-        function resetUI() {
+        // === Parser UI State ===
+        function showMainScreen(state) {
             if (eventSource) eventSource.close();
-            setUIState('input');
-            parserForm.reset();
-            searchForm.reset();
-            progressBar.style.width = '0%';
-            progressLabel.textContent = '';
-            progressItemName.textContent = '';
-            switchParserTab('url');
+            inputSection.classList.toggle('hidden', state !== 'input');
+            progressSection.classList.toggle('hidden', state !== 'progress');
+            errorSection.classList.toggle('hidden', state !== 'error');
+            resultSection.classList.toggle('hidden', state !== 'result');
+            
+            if (state === 'input') {
+                parserForm.reset();
+                progressBar.style.width = '0%';
+                progressLabel.textContent = '';
+                progressItemName.textContent = '';
+                currentResult = null;
+                switchInputTab('url');
+            }
+            navigate('parser');
         }
-        
-        function startParser(event) {
+
+        // === Core App Logic ===
+        function startParsing(event) {
             event.preventDefault();
             let inputStr = '';
+            let type = activeTab;
 
-            if (activeParserTab === 'url') {
+            if (type === 'url') {
                 inputStr = urlInput.value.trim();
             } else {
                 const sellerId = sellerIdInput.value.trim();
@@ -262,32 +246,11 @@
                 return;
             }
             
-            setUIState('progress');
-            progressTitle.textContent = "Анализ по ID/ссылке...";
-            progressBar.className = 'h-4 rounded-full progress-bar-inner bg-gradient-to-r from-green-400 to-blue-500'; // Parser color
+            const requestData = { input: inputStr, type: type, date: new Date().toISOString() };
+            saveToHistory(requestData);
 
+            showMainScreen('progress');
             eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
-            eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
-            eventSource.onerror = () => {
-                showError("Ошибка соединения с сервером.");
-                if(eventSource) eventSource.close();
-            };
-        }
-
-        function startSearch(event) {
-            event.preventDefault();
-            const keyword = searchKeywordInput.value.trim();
-            if (!keyword) {
-                showError("Введите ключевое слово для поиска.");
-                return;
-            }
-
-            setUIState('progress');
-            progressTitle.textContent = "Поиск по ключевому слову...";
-            progressBar.className = 'h-4 rounded-full progress-bar-inner bg-gradient-to-r from-purple-500 to-pink-500'; // Search color
-
-
-            eventSource = new EventSource(`/search?${new URLSearchParams({keyword: keyword}).toString()}`);
             eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
             eventSource.onerror = () => {
                 showError("Ошибка соединения с сервером.");
@@ -309,9 +272,10 @@
                     break;
                 case 'result':
                     if(eventSource) eventSource.close();
-                    displayResults(data.data.table_data);
-                    downloadButton.onclick = () => window.location.href = `/download/${data.data.download_filename}`;
-                    setUIState('result');
+                    currentResult = { ...data.data, date: new Date().toISOString() };
+                    displayResults(currentResult.table_data);
+                    downloadButton.onclick = () => window.location.href = `/download/${currentResult.download_filename}`;
+                    showMainScreen('result');
                     break;
                 case 'error':
                     if(eventSource) eventSource.close();
@@ -322,16 +286,16 @@
 
         function showError(message) {
             errorMessage.textContent = message;
-            setUIState('error');
+            showMainScreen('error');
         }
 
         function displayResults(tableData) {
             const table = resultTable;
             table.innerHTML = '';
             if (!tableData || tableData.length === 0) {
-                 table.innerHTML = '<thead><tr><th class="px-5 py-3 text-center text-sm font-semibold text-slate-300">Нет данных для отображения</th></tr></thead>';
+                 resultSection.classList.add('hidden'); // Hide if no data
                  return;
-            }
+            };
 
             const headers = Object.keys(tableData[0]);
             const thead = document.createElement('thead');
@@ -352,17 +316,7 @@
                 tr.className = 'hover:bg-slate-700/50';
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    let content = rowData[header] ?? '';
-                    // Check if the header is 'Фото' and content is a URL
-                    if (header === 'Фото' && typeof content === 'string' && content.startsWith('http')) {
-                        const img = document.createElement('img');
-                        img.src = content.split(';')[0]; // Show first image
-                        img.className = 'h-12 w-12 object-cover rounded';
-                        img.alt = 'Фото товара';
-                        td.appendChild(img);
-                    } else {
-                        td.textContent = content;
-                    }
+                    td.textContent = rowData[header] ?? '';
                     td.className = 'px-5 py-4 whitespace-nowrap text-sm text-slate-200';
                     tr.appendChild(td);
                 });
@@ -371,8 +325,125 @@
             table.append(thead, tbody);
         }
 
+        // === Local Storage Logic ===
+        function getFromStorage(key) {
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        }
+
+        function saveToStorage(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // --- History ---
+        function saveToHistory(requestData) {
+            let history = getFromStorage('parserHistory');
+            history.unshift(requestData); // Add to the beginning
+            if (history.length > 50) history.pop(); // Limit history size
+            saveToStorage('parserHistory', history);
+        }
+
+        function renderHistory() {
+            const history = getFromStorage('parserHistory');
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="text-slate-400 text-center">Ваша история запросов пуста.</p>';
+                return;
+            }
+            history.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'p-4 rounded-lg bg-slate-800/50 flex justify-between items-center';
+                el.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-white">${item.input}</p>
+                        <p class="text-sm text-slate-400">${new Date(item.date).toLocaleString()}</p>
+                    </div>
+                    <button class="rerun-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg" data-index="${index}">Повторить</button>
+                `;
+                historyList.appendChild(el);
+            });
+            historyList.querySelectorAll('.rerun-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.dataset.index;
+                    const item = history[index];
+                    if (item.type === 'url') {
+                        urlInput.value = item.input;
+                    } else {
+                        const [sellerId, brandId] = item.input.split(' ');
+                        sellerIdInput.value = sellerId;
+                        brandIdInput.value = brandId;
+                    }
+                    switchInputTab(item.type);
+                    navigate('parser');
+                    // Automatically submit the form
+                    parserForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            });
+        }
+        
+        // --- Favorites ---
+        function addToFavorites() {
+            if (!currentResult) return;
+            let favorites = getFromStorage('parserFavorites');
+            // Avoid duplicates
+            if (favorites.some(fav => fav.download_filename === currentResult.download_filename)) {
+                tg.showAlert('Этот результат уже в избранном.');
+                return;
+            }
+            favorites.unshift(currentResult);
+            saveToStorage('parserFavorites', favorites);
+            tg.showAlert('Результат добавлен в избранное!');
+        }
+
+        function renderFavorites() {
+            const favorites = getFromStorage('parserFavorites');
+            favoritesList.innerHTML = '';
+            if (favorites.length === 0) {
+                favoritesList.innerHTML = '<p class="text-slate-400 text-center">Вы еще не добавляли ничего в избранное.</p>';
+                return;
+            }
+            favorites.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'p-4 rounded-lg bg-slate-800/50';
+                el.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-semibold text-white">Результат от ${new Date(item.date).toLocaleString()}</p>
+                            <p class="text-sm text-slate-400">Файл: ${item.download_filename}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                             <button class="view-fav-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg" data-index="${index}">Посмотреть</button>
+                             <button class="delete-fav-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg" data-index="${index}">Удалить</button>
+                        </div>
+                    </div>
+                `;
+                favoritesList.appendChild(el);
+            });
+
+            favoritesList.querySelectorAll('.view-fav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.dataset.index;
+                    const item = favorites[index];
+                    currentResult = item;
+                    displayResults(item.table_data);
+                    downloadButton.onclick = () => window.location.href = `/download/${item.download_filename}`;
+                    showMainScreen('result');
+                });
+            });
+            
+            favoritesList.querySelectorAll('.delete-fav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.dataset.index;
+                    let favs = getFromStorage('parserFavorites');
+                    favs.splice(index, 1);
+                    saveToStorage('parserFavorites', favs);
+                    renderFavorites(); // Re-render the list
+                });
+            });
+        }
+
         // Initial UI setup
-        switchMainTab('parser'); // Start with the parser tab
+        showMainScreen('input');
+        
     </script>
 </body>
 </html>
