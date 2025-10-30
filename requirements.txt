@@ -2,3 +2,4 @@ requests
 openpyxl
 flask
 gunicorn
+py-telegram-bot-api
