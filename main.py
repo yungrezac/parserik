@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse
 import requests
 import time
 import random
@@ -39,24 +39,30 @@ def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
                 time.sleep(sleep_time)
                 continue
             else:
+                # Для других ошибок HTTP, можно просто прекратить попытки
                 raise e
         except requests.exceptions.RequestException as e:
+            # Для сетевых ошибок (timeout, connection error) также попробуем еще раз
             sleep_time = backoff_factor * (2 ** i) + random.uniform(0, 1)
             time.sleep(sleep_time)
             continue
+    # Если все попытки не увенчались успехом
     raise Exception(f"Не удалось получить данные после {retries} попыток. URL: {url}")
 
 
+# --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССА ---
 def stream_parser(seller_id, brand_id):
     """
-    Основная логика парсинга по ID, перестроенная в генератор, который yield'ит обновления прогресса.
+    Основная логика парсинга, перестроенная в генератор, который yield'ит обновления прогресса.
     """
     all_products = []
+    # 1. Получение карты маршрутов для корзин
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
     baskets = get_mediabasket_route_map()
     if not baskets:
         yield json.dumps({'type': 'log', 'message': 'Не удалось получить карту маршрутов. Парсинг может быть неполным.'})
 
+    # 2. Определение общего количества товаров
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
     try:
         response_total = make_request(url_total_list, headers=headers)
@@ -71,34 +77,65 @@ def stream_parser(seller_id, brand_id):
     pages_count = math.ceil(products_total / 100)
     yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}. Начинаем обработку...'})
 
+    # 3. Постраничный обход и сбор данных
     current_page, count = 1, 0
     while current_page <= pages_count:
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
         try:
             response = make_request(url_list, headers=headers)
-            products_on_page = response.json().get('data', {}).get('products', [])
+            products_on_page = response.json().get('products', [])
         except (requests.exceptions.RequestException, json.JSONDecodeError):
             current_page += 1
-            time.sleep(random.uniform(1, 3))
+            time.sleep(random.uniform(1, 3)) # Добавим задержку при ошибке на странице
             continue
 
         for item in products_on_page:
             count += 1
             yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')})
-            all_products.append(get_full_product_info(item, baskets))
-            time.sleep(random.uniform(0.1, 0.3))
+            
+            productId = str(item['id'])
+            backetName = get_host_by_range(int(productId[:-5]), baskets)
+            backetNumber, isAutoServer = 1, bool(backetName)
+            while True:
+                if not isAutoServer and backetNumber > 12:
+                    item['advanced'] = {}
+                    break
+                
+                backetFormattedNumber = f"0{backetNumber}" if backetNumber < 10 else str(backetNumber)
+                urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
+                
+                try:
+                    # Используем более короткий таймаут для карточек, но без повторных попыток, чтобы не замедлять
+                    productResponse = requests.get(urlItem, headers=headers, timeout=3)
+                    if productResponse.status_code == 200:
+                        item['advanced'] = productResponse.json()
+                        break
+                    if not isAutoServer and productResponse.status_code == 404:
+                        backetNumber += 1
+                        continue
+                    item['advanced'] = {}
+                    break
+                except requests.exceptions.RequestException:
+                    item['advanced'] = {}
+                    break
+            all_products.append(item)
+            time.sleep(random.uniform(0.1, 0.4)) # Небольшая задержка между товарами
 
         current_page += 1
-        time.sleep(random.uniform(1, 2))
+        time.sleep(random.uniform(1, 2)) # Задержка между страницами
 
+    # 4. Маппинг данных и создание файла
     yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'})
-    mapped_data = map_data(all_products, baskets)
+    mapped_data = map_data(all_products, baskets) # Передаем baskets в map_data
+
     yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
     output_path = create_excel_file(mapped_data)
     if not output_path:
         raise Exception("Не удалось создать Excel-файл.")
 
     download_filename = os.path.basename(output_path)
+
+    # 5. Отправка финального результата
     yield json.dumps({
         'type': 'result',
         'data': {
@@ -107,100 +144,9 @@ def stream_parser(seller_id, brand_id):
         }
     })
 
-def stream_search_parser(keyword):
-    """
-    Парсер по ключевому слову, который yield'ит обновления прогресса.
-    """
-    all_products = []
-    MAX_PRODUCTS = 1000
-    yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
-    baskets = get_mediabasket_route_map()
-    if not baskets:
-        yield json.dumps({'type': 'log', 'message': 'Не удалось получить карту маршрутов. Парсинг может быть неполным.'})
 
-    yield json.dumps({'type': 'start', 'total': MAX_PRODUCTS, 'message': f'Поиск по ключевому слову: "{keyword}". Собираем до {MAX_PRODUCTS} товаров...'})
-
-    count = 0
-    # WB отдает по 100 товаров на странице
-    for page in range(1, (MAX_PRODUCTS // 100) + 2):
-        if count >= MAX_PRODUCTS:
-            break
-        
-        encoded_keyword = quote(keyword)
-        url_list = f"https://search.wb.ru/exactmatch/ru/common/v4/search?appType=1&curr=rub&dest=-1257786&page={page}&query={encoded_keyword}&resultset=catalog&sort=popular&spp=30&suppressSpellcheck=false"
-        
-        try:
-            response = make_request(url_list, headers=headers)
-            products_data = response.json().get('data', {})
-            products_on_page = products_data.get('products', [])
-            
-            if not products_on_page and page == 1:
-                raise Exception("Товары по вашему запросу не найдены. Попробуйте другое ключевое слово.")
-            if not products_on_page:
-                break # Прекращаем, если товаров больше нет
-
-        except (requests.exceptions.RequestException, json.JSONDecodeError, Exception) as e:
-            if page == 1: raise e
-            else: continue
-        
-        for item in products_on_page:
-            if count >= MAX_PRODUCTS:
-                break
-            count += 1
-            yield json.dumps({'type': 'progress', 'current': count, 'total': MAX_PRODUCTS, 'message': item.get('name', '')})
-            all_products.append(get_full_product_info(item, baskets))
-            time.sleep(random.uniform(0.1, 0.3))
-    
-    yield json.dumps({'type': 'log', 'message': f'Собрано {len(all_products)} товаров. Формирование таблицы...'})
-    mapped_data = map_data(all_products, baskets)
-    yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
-    output_path = create_excel_file(mapped_data)
-    if not output_path:
-        raise Exception("Не удалось создать Excel-файл.")
-
-    download_filename = os.path.basename(output_path)
-    yield json.dumps({
-        'type': 'result',
-        'data': {
-            'table_data': mapped_data,
-            'download_filename': download_filename
-        }
-    })
-
-def get_full_product_info(item, baskets):
-    """Получает полную информацию о товаре из его 'карточки'."""
-    productId = str(item['id'])
-    backetName = get_host_by_range(int(productId[:-5]), baskets)
-    backetNumber, isAutoServer = 1, bool(backetName)
-    while True:
-        if not isAutoServer and backetNumber > 15:
-            item['advanced'] = {}
-            break
-        
-        backetFormattedNumber = f"0{backetNumber}" if backetNumber < 10 else str(backetNumber)
-        urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
-        
-        try:
-            productResponse = requests.get(urlItem, headers=headers, timeout=3)
-            if productResponse.status_code == 200:
-                item['advanced'] = productResponse.json()
-                break
-            if not isAutoServer: # Если сервер не авто, пробуем следующий
-                backetNumber += 1
-                continue
-            item['advanced'] = {}
-            break
-        except requests.exceptions.RequestException:
-            if not isAutoServer: # Если ошибка и не авто, пробуем следующий
-                backetNumber += 1
-                continue
-            item['advanced'] = {}
-            break
-    return item
-
-
+# --- Вспомогательные функции (без критических изменений) ---
 def check_string(s): return bool(re.fullmatch(r'(\d+%3B)*\d+', s))
-
 def parse_input(input_str):
     parts = input_str.split()
     if len(parts) > 2: raise ValueError("Необходимо указать два параметра через пробел")
@@ -210,7 +156,6 @@ def parse_input(input_str):
         if not sellerId.isdigit() or not check_string(brandId): raise ValueError("Необходимо указать число и ID бренда(ов)")
     else:
         parseResult = urlparse(input_str)
-        if '/seller/' not in parseResult.path: raise ValueError("Ссылка должна вести на страницу продавца.")
         sellerId = str(parseResult.path).split('/')[2]
         query = str(parseResult.query)
         brandStartIndex = query.find('fbrand')
@@ -222,23 +167,25 @@ def parse_input(input_str):
 
 def get_mediabasket_route_map():
     try:
-        response = make_request('https://cdn-host.wildberries.ru/host/v1/health', headers=headers, timeout=5)
-        data = response.json().get('hosts', [])
-        return [h for h in data if h.get('name') == 'basket-line'][0]['hosts']
-    except (requests.exceptions.RequestException, json.JSONDecodeError, KeyError, IndexError):
+        response = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers, timeout=5)
+        data = response.json()
+        if 'recommend' in data and 'mediabasket_route_map' in data['recommend']:
+            return data['recommend']['mediabasket_route_map'][0]['hosts']
+    except (requests.exceptions.RequestException, json.JSONDecodeError, KeyError):
         return []
+    return []
 
 def get_host_by_range(range_value, route_map):
     if not isinstance(route_map, list): return ''
     for host_info in route_map: 
-        if 'shard_range_from' in host_info and 'shard_range_to' in host_info and host_info['shard_range_from'] <= range_value <= host_info['shard_range_to']: 
+        if 'vol_range_from' in host_info and 'vol_range_to' in host_info and host_info['vol_range_from'] <= range_value <= host_info['vol_range_to']: 
             return host_info['host']
     return ''
 
 def map_data(data, baskets):
     new_data = []
     for item in data:
-        advanced = item.get('advanced', {})
+        advanced = item.get('advanced')
         if not advanced: continue
         
         options = advanced.get('options', [])
@@ -269,7 +216,7 @@ def map_data(data, baskets):
             'Описание': advanced.get('description', ''),
             'Фото': '',  # Оставляем пустым
             'Видео': '',  # Оставляем пустым
-            'Полное наименование товара': advanced.get('nm_id_ext', {}).get('ext_name', item.get('name', '')),
+            'Полное наименование товара': advanced.get('name', ''),
             'Состав': find_value_in_arrays(options, advanced_info_group, search_name='Состав'),
             'Баркод': '', 
             'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес с упаковкой (кг)')),
@@ -348,6 +295,7 @@ def create_excel_file(data):
 
     # --- Заголовки ---
     # Строка 1 - объединенные ячейки согласно требованиям
+    # Создаем строку с правильным распределением текста по объединенным ячейкам
     row1_data = [''] * 43  # Создаем пустую строку из 43 ячеек
     
     # Заполняем ячейки, которые будут объединены
@@ -462,14 +410,13 @@ def create_excel_file(data):
             ws.append(row_to_append)
             
     # Устанавливаем ширину столбцов
-    column_widths = {'A': 15, 'B': 20, 'C': 15, 'D': 40, 'E': 20, 'F': 20, 'G': 50, 'H': 50, 'I': 15, 'J': 40, 'K': 40, 'L': 15, 'M': 15, 'N': 15, 'O': 15, 'P': 15}
-    for col, width in column_widths.items():
-        ws.column_dimensions[col].width = width
+    for col in range(ord('A'), ord('Q') + 1):
+        ws.column_dimensions[chr(col)].width = 30
 
     wb.save(output_path)
     return output_path
 
-
+# --- Прочие вспомогательные функции (без изменений) ---
 def find_options_by_group_name(grouped_options, group_name): 
     try: return next((g['options'] for g in grouped_options if g['group_name'] == group_name), [])
     except (TypeError, KeyError): return []
