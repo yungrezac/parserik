@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, send_from_directory, Response
 import os
 import time
 import json
-from main import stream_parser, parse_input, stream_search_parser
+from main import stream_parser, parse_input
 
 # Инициализация Flask приложения
 app = Flask(__name__, static_folder='public', template_folder='public')
@@ -37,30 +37,6 @@ def stream_run():
                 yield f"data: {progress_update}\n\n"
                 time.sleep(0.05)
 
-        except Exception as e:
-            error_payload = json.dumps({
-                "type": "error", 
-                "message": f"Критическая ошибка на сервере: {str(e)}"
-            })
-            yield f"data: {error_payload}\n\n"
-    
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
-
-@app.route('/search', methods=['GET'])
-def search_run():
-    """
-    Эндпоинт для поиска по ключевому слову.
-    """
-    keyword = request.args.get('keyword')
-    if not keyword:
-        return Response(status=400)
-
-    def generate():
-        """Функция-генератор для трансляции прогресса поиска"""
-        try:
-            for progress_update in stream_search_parser(keyword):
-                yield f"data: {progress_update}\n\n"
-                time.sleep(0.05)
         except Exception as e:
             error_payload = json.dumps({
                 "type": "error", 
