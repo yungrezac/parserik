@@ -6,7 +6,7 @@ import random
 import datetime
 import math
 import os
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side, NamedStyle
 import json
 
@@ -51,7 +51,7 @@ def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
 
 
 # --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССА ---
-def stream_parser(seller_id, brand_id):
+def stream_parser(seller_id, brand_id, category):
     """
     Основная логика парсинга, перестроенная в генератор, который yield'ит обновления прогресса.
     """
@@ -129,7 +129,7 @@ def stream_parser(seller_id, brand_id):
     mapped_data = map_data(all_products, baskets) # Передаем baskets в map_data
 
     yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
-    output_path = create_excel_file(mapped_data)
+    output_path = create_excel_file(mapped_data, category)
     if not output_path:
         raise Exception("Не удалось создать Excel-файл.")
 
@@ -254,165 +254,37 @@ def map_data(data, baskets):
         new_data.append(new_item)
     return new_data
 
-def create_excel_file(data):
+def create_excel_file(data, category):
     if not data:
         return None
 
-    if not os.path.exists("downloads"):
-        os.makedirs("downloads")
-    
-    filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
-    output_path = os.path.join("downloads", filename)
-    
-    wb = Workbook()
+    template_path = os.path.join('shablon', f'{category}.xlsx')
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Шаблон для категории '{category}' не найден.")
+
+    wb = load_workbook(template_path)
     ws = wb.active
 
-    # Стили
-    header_style_s0 = NamedStyle(name="header_style_s0")
-    header_style_s0.fill = PatternFill(start_color="ECDAFF", end_color="ECDAFF", fill_type="solid")
-    header_style_s0.font = Font(name='Calibri', size=16)
-    header_style_s0.alignment = Alignment(vertical='bottom')
-
-    header_style_s1 = NamedStyle(name="header_style_s1")
-    header_style_s1.fill = PatternFill(start_color="ECDAFF", end_color="ECDAFF", fill_type="solid")
-    header_style_s1.font = Font(name='Calibri', size=12)
-    header_style_s1.alignment = Alignment(vertical='bottom')
-
-    header_style_s2 = NamedStyle(name="header_style_s2")
-    header_style_s2.fill = PatternFill(start_color="9A41FE", end_color="9A41FE", fill_type="solid")
-    header_style_s2.font = Font(name='Calibri', size=12, bold=True, color="FFFFFF")
-    header_style_s2.alignment = Alignment(vertical='center')
-
-    description_style_s3 = NamedStyle(name="description_style_s3")
-    description_style_s3.fill = PatternFill(start_color="F0F0F3", end_color="F0F0F3", fill_type="solid")
-    description_style_s3.font = Font(name='Calibri', size=10)
-    description_style_s3.alignment = Alignment(vertical='top', wrap_text=True)
-
-    wb.add_named_style(header_style_s0)
-    wb.add_named_style(header_style_s1)
-    wb.add_named_style(header_style_s2)
-    wb.add_named_style(description_style_s3)
-
-    # --- Заголовки ---
-    # Строка 1 - объединенные ячейки согласно требованиям
-    # Создаем строку с правильным распределением текста по объединенным ячейкам
-    row1_data = [''] * 43  # Создаем пустую строку из 43 ячеек
+    # Определяем заголовки из строки 3 шаблона
+    headers_row3 = [cell.value for cell in ws[3]]
     
-    # Заполняем ячейки, которые будут объединены
-    ws.append(row1_data)
-    
-    # Объединение ячеек в строке 1
-    ws.merge_cells('C1:K1')  # Основная информация C - K
-    ws.merge_cells('L1:L1')  # Размеры и Баркоды L
-    ws.merge_cells('M1:Q1')  # Габариты M - Q
-    ws.merge_cells('R1:V1')  # Документы R - V
-    ws.merge_cells('W1:AP1') # Дополнительная информация W - AP
-    ws.merge_cells('AQ1:AQ1') # Цены AQ
-    
-    # Заполняем объединенные ячейки текстом
-    ws['C1'] = 'Основная информация'
-    ws['L1'] = 'Размеры и Баркоды'
-    ws['M1'] = 'Габариты'
-    ws['R1'] = 'Документы'
-    ws['W1'] = 'Дополнительная информация'
-    ws['AQ1'] = 'Цены'
-    
-    for cell in ws[1]:
-        cell.style = header_style_s0
-    ws.row_dimensions[1].height = 41
-
-    # Строка 2 - такое же объединение как в строке 1
-    row2_data = [''] * 43
-    ws.append(row2_data)
-    
-    # Объединение ячеек в строке 2 (такое же как в строке 1)
-    ws.merge_cells('C2:K2')  # Основная информация C - K
-    ws.merge_cells('L2:L2')  # Размеры и Баркоды L
-    ws.merge_cells('M2:Q2')  # Габариты M - Q
-    ws.merge_cells('R2:V2')  # Документы R - V
-    ws.merge_cells('W2:AP2') # Дополнительная информация W - AP
-    ws.merge_cells('AQ2:AQ2') # Цены AQ
-    
-    for cell in ws[2]:
-        cell.style = header_style_s1
-    ws.row_dimensions[2].height = 63
-
-    # Строка 3 - заголовки столбцов
-    headers_row3 = ['Группа', 'Артикул продавца', 'Артикул WB', 'Наименование', 'Категория продавца', 'Бренд', 'Описание', 'Фото', 'Видео', 'Полное наименование товара', 'Состав', 'Баркод', 'Вес с упаковкой (кг)', 'Вес товара без упаковки (г)', 'Высота упаковки', 'Длина упаковки', 'Ширина упаковки', 'Дата окончания действия сертификата/декларации', 'Дата регистрации сертификата/декларации', 'Номер декларации соответствия', 'Номер сертификата соответствия', 'Свидетельство о регистрации СГР', 'SPF', 'Артикул OZON', 'Возрастные ограничения', 'Время нанесения', 'Действие', 'ИКПУ', 'Код упаковки', 'Комплектация', 'Назначение косметического средства', 'Назначение подарка', 'Объем товара', 'Повод', 'Раздел меню', 'Срок годности', 'Страна производства', 'ТНВЭД', 'Тип доставки', 'Тип кожи', 'Упаковка', 'Форма упаковки', 'Ставка НДС', '']
-    ws.append(headers_row3)
-    for cell in ws[3]:
-        cell.style = header_style_s2
-
-    ws.row_dimensions[3].height = 41
-    
-    # Строка 4 - описания
-    descriptions_row4 = [
-        '',
-        'Это номер или название, по которому вы сможете идентифицировать свой товар.',
-        'Уникальный идентификатор карточки, который присваивается после успешного создания товара.',
-        '',
-        'Категория выбирается строго из справочника, справочник можно посмотреть через единичное создание карточек.',
-        '',
-        'Если вы не заполните характеристики, то мы постараемся заполнить их сами из вашего описания или по фото товара.',
-        "Список ссылок на фотографии разделённый ';' (Количество - до 30 шт.)",
-        'Ссылка на видео (Количество - 1 шт.)',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 20',
-        '',
-        'Единица измерения: кг',
-        'Единица измерения: г',
-        'Единица измерения: см',
-        'Единица измерения: см',
-        'Единица измерения: см',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 12',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 3',
-        'Единица измерения: мл',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 3',
-        'Максимальное количество значений: 1',
-        'Максимальное количество значений: 1',
-        ''
-    ]
-    ws.append(descriptions_row4)
-    for cell in ws[4]:
-        cell.style = description_style_s3
-    ws.row_dimensions[4].height = 56
-
-    # --- Закрепление столбцов A и B ---
-    ws.freeze_panes = 'C1'
-
     # --- Данные ---
     if data:
         # Используем headers_row3 для обеспечения правильного порядка
         for row_data in data:
             row_to_append = []
             for header in headers_row3:
-                 row_to_append.append(row_data.get(header, ''))
+                 # Ищем данные в row_data, но игнорируем регистр и пробелы для надежности
+                 found_key = next((k for k in row_data if k.strip().lower() == header.strip().lower()), None)
+                 row_to_append.append(row_data.get(found_key, ''))
             ws.append(row_to_append)
             
-    # Устанавливаем ширину столбцов
-    for col in range(ord('A'), ord('Q') + 1):
-        ws.column_dimensions[chr(col)].width = 30
-
+    if not os.path.exists("downloads"):
+        os.makedirs("downloads")
+    
+    filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
+    output_path = os.path.join("downloads", filename)
+    
     wb.save(output_path)
     return output_path
 
