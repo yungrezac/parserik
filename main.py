@@ -62,8 +62,10 @@ def stream_parser(seller_id, brand_id, category):
     if not baskets:
         yield json.dumps({'type': 'log', 'message': 'Не удалось получить карту маршрутов. Парсинг может быть неполным.'})
 
+    brand_filter_param = f"&fbrand={brand_id}" if brand_id else ""
+
     # 2. Определение общего количества товаров
-    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
+    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357{brand_filter_param}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
     try:
         response_total = make_request(url_total_list, headers=headers)
         res_total = response_total.json()
@@ -80,7 +82,7 @@ def stream_parser(seller_id, brand_id, category):
     # 3. Постраничный обход и сбор данных
     current_page, count = 1, 0
     while current_page <= pages_count:
-        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
+        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357{brand_filter_param}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
         try:
             response = make_request(url_list, headers=headers)
             products_on_page = response.json().get('products', [])
@@ -149,20 +151,42 @@ def stream_parser(seller_id, brand_id, category):
 def check_string(s): return bool(re.fullmatch(r'(\d+%3B)*\d+', s))
 def parse_input(input_str):
     parts = input_str.split()
-    if len(parts) > 2: raise ValueError("Необходимо указать два параметра через пробел")
-    sellerId, brandId = ('', '')
-    if len(parts) == 2:
-        sellerId, brandId = parts[0], parts[1]
-        if not sellerId.isdigit() or not check_string(brandId): raise ValueError("Необходимо указать число и ID бренда(ов)")
-    else:
+    sellerId, brandId = '', ''
+
+    # Case 1: URL is provided
+    if 'wildberries.ru' in input_str:
         parseResult = urlparse(input_str)
-        sellerId = str(parseResult.path).split('/')[2]
+        path_parts = str(parseResult.path).split('/')
+        if len(path_parts) > 2 and path_parts[1] == 'seller':
+             sellerId = path_parts[2]
+        else:
+             raise ValueError("Не удалось извлечь ID продавца из ссылки.")
+
         query = str(parseResult.query)
-        brandStartIndex = query.find('fbrand')
-        if brandStartIndex == -1: raise ValueError("Параметр fbrand не найден в ссылке.")
-        brandEndIndex = query.find('&', brandStartIndex)
-        brandItems = query[brandStartIndex:] if brandEndIndex == -1 else query[brandStartIndex:brandEndIndex]
-        brandId = brandItems.split('=')[1]
+        brandStartIndex = query.find('fbrand=')
+        if brandStartIndex != -1:
+            brandEndIndex = query.find('&', brandStartIndex)
+            brandItems = query[brandStartIndex:] if brandEndIndex == -1 else query[brandStartIndex:brandEndIndex]
+            brandId = brandItems.split('=')[1]
+        # If fbrand is not found, brandId remains '', which is fine.
+
+    # Case 2: IDs are provided
+    elif len(parts) == 1:
+        if parts[0].isdigit():
+            sellerId = parts[0]
+            brandId = '' # No brand ID provided
+        else:
+            raise ValueError("Некорректный ID продавца.")
+    elif len(parts) == 2:
+        sellerId, brandId = parts[0], parts[1]
+        if not sellerId.isdigit() or not check_string(brandId):
+             raise ValueError("Необходимо указать числовой ID продавца и ID бренда(ов).")
+    else:
+         raise ValueError("Некорректный ввод. Укажите ссылку, ID продавца, или ID продавца и ID бренда.")
+
+    if not sellerId:
+        raise ValueError("Не удалось определить ID продавца.")
+
     return (sellerId, brandId)
 
 def get_mediabasket_route_map():
