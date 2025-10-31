@@ -91,20 +91,6 @@
         .btn-success:hover {
             background-color: #047857;
         }
-        .btn-danger {
-            background-color: #dc2626;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #b91c1c;
-        }
-        .btn-warning {
-            background-color: #d97706;
-            color: white;
-        }
-        .btn-warning:hover {
-            background-color: #b45309;
-        }
         .fade-in { 
             animation: fadeIn 0.5s ease-out forwards; 
         }
@@ -123,13 +109,28 @@
 </head>
 <body class="antialiased">
     <div class="min-h-screen w-full">
+        <!-- === CATEGORY SCREEN === -->
+        <div id="category-screen" class="screen-content">
+            <div class="glass-card rounded-2xl p-6 fade-in">
+                 <h1 class="text-2xl font-bold text-white mb-2 text-center">Выберите категорию</h1>
+                <div id="category-list" class="space-y-2 pt-4">
+                    {% for category in categories %}
+                    <button class="category-button w-full text-left p-4 bg-slate-800/50 hover:bg-slate-800/70 rounded-lg transition-colors">
+                        {{ category }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
         <!-- === MAIN PARSER SCREEN === -->
-        <div id="parser-screen" class="screen-content">
+        <div id="parser-screen" class="screen-content hidden">
             <!-- Input Section -->
             <div id="input-section" class="glass-card rounded-2xl p-6 fade-in section-spacing">
+                 <button id="back-to-category" class="text-slate-400 hover:text-white mb-4">&larr; Назад к категориям</button>
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold text-white mb-2">Holly Parser</h1>
-                    <p class="text-slate-400">Введите данные для анализа</p>
+                    <p id="selected-category-display" class="text-slate-400"></p>
                 </div>
                 
                 <div class="mb-6 border-b border-slate-700">
@@ -185,11 +186,6 @@
                 <div class="flex justify-between items-center mb-6 section-spacing">
                     <h2 class="text-2xl font-bold text-white">Результаты анализа</h2>
                     <div class="flex space-x-3">
-                        <button id="add-to-favorites-button" class="btn btn-warning p-3" title="Добавить в избранное">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </button>
                         <button id="new-parse-button" class="btn btn-secondary px-4 py-2 text-sm">Новый анализ</button>
                         <button id="download-button" class="btn btn-success px-4 py-2 text-sm">Скачать</button>
                     </div>
@@ -200,47 +196,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- === HISTORY SCREEN === -->
-        <div id="history-screen" class="screen-content hidden">
-            <div class="glass-card rounded-2xl p-6 fade-in">
-                <h2 class="text-2xl font-bold text-white mb-6">История запросов</h2>
-                <div id="history-list" class="space-y-4"></div>
-            </div>
-        </div>
-
-        <!-- === FAVORITES SCREEN === -->
-        <div id="favorites-screen" class="screen-content hidden">
-            <div class="glass-card rounded-2xl p-6 fade-in">
-                <h2 class="text-2xl font-bold text-white mb-6">Избранное</h2>
-                <div id="favorites-list" class="space-y-4"></div>
-            </div>
-        </div>
     </div>
-
-    <!-- === BOTTOM NAVBAR === -->
-    <nav class="fixed bottom-0 left-0 right-0 h-20 glass-card border-t border-slate-700 z-50">
-        <div class="h-full flex justify-around items-center px-4">
-            <button id="nav-parser" class="nav-button active flex flex-col items-center justify-center w-full h-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M7 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H9V3a1 1 0 00-1-1H7zM6 8a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h4a1 1 0 100-2H7z" clip-rule="evenodd"/>
-                </svg>
-                <span class="text-sm font-medium">Парсер</span>
-            </button>
-            <button id="nav-history" class="nav-button flex flex-col items-center justify-center w-full h-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.5-11.5a.5.5 0 00-1 0v5.793l-3.146 3.147a.5.5 0 00.708.708L10 12.207V6.5z" clip-rule="evenodd"/>
-                </svg>
-                <span class="text-sm font-medium">История</span>
-            </button>
-            <button id="nav-favorites" class="nav-button flex flex-col items-center justify-center w-full h-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                </svg>
-                <span class="text-sm font-medium">Избранное</span>
-            </button>
-        </div>
-    </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -251,9 +207,8 @@
 
         // === UI Screens ===
         const screens = {
+            category: document.getElementById('category-screen'),
             parser: document.getElementById('parser-screen'),
-            history: document.getElementById('history-screen'),
-            favorites: document.getElementById('favorites-screen'),
         };
 
         // === Parser UI Parts ===
@@ -269,23 +224,18 @@
         const tryAgainButton = document.getElementById('try-again-button');
         const newParseButton = document.getElementById('new-parse-button');
         const downloadButton = document.getElementById('download-button');
-        const addToFavoritesButton = document.getElementById('add-to-favorites-button');
+        const backToCategoryButton = document.getElementById('back-to-category');
 
-        // === Progress & Content Display ===
+        // === Content Display ===
+        const selectedCategoryDisplay = document.getElementById('selected-category-display');
+        const categoryButtons = document.querySelectorAll('.category-button');
         const progressBar = document.getElementById('progress-bar');
         const progressLabel = document.getElementById('progress-label');
         const progressItemName = document.getElementById('progress-item-name');
         const errorMessage = document.getElementById('error-message');
         const resultTable = document.getElementById('result-table');
-        const historyList = document.getElementById('history-list');
-        const favoritesList = document.getElementById('favorites-list');
 
-        // === Navigation & Tabs ===
-        const navButtons = {
-            parser: document.getElementById('nav-parser'),
-            history: document.getElementById('nav-history'),
-            favorites: document.getElementById('nav-favorites'),
-        };
+        // === Tabs ===
         const tabUrl = document.getElementById('tab-url');
         const tabId = document.getElementById('tab-id');
         const tabContentUrl = document.getElementById('tab-content-url');
@@ -297,45 +247,48 @@
         // === State ===
         let eventSource;
         let activeInputTab = 'url';
-        let currentResult = null;
+        let selectedCategory = '';
 
         // === Event Listeners ===
         parserForm.addEventListener('submit', handleFormSubmit);
-        tryAgainButton.addEventListener('click', () => showParserPart('input'));
-        newParseButton.addEventListener('click', () => showParserPart('input'));
-        addToFavoritesButton.addEventListener('click', addToFavorites);
+        tryAgainButton.addEventListener('click', () => showScreen('parser', 'input'));
+        newParseButton.addEventListener('click', () => showScreen('category'));
+        backToCategoryButton.addEventListener('click', () => showScreen('category'));
         tabUrl.addEventListener('click', () => switchInputTab('url'));
         tabId.addEventListener('click', () => switchInputTab('id'));
-        Object.keys(navButtons).forEach(key => {
-            navButtons[key].addEventListener('click', () => navigateTo(key));
+        categoryButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                selectedCategory = button.textContent.trim();
+                selectedCategoryDisplay.textContent = `Категория: ${selectedCategory}`;
+                showScreen('parser', 'input');
+            });
         });
 
-        // === Navigation ===
-        function navigateTo(screen) {
+        // === Screen & State Management ===
+        function showScreen(screenName, parserPartName) {
+            if (eventSource) eventSource.close();
             Object.values(screens).forEach(s => s.classList.add('hidden'));
-            screens[screen].classList.remove('hidden');
+            screens[screenName].classList.remove('hidden');
             
-            Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
-            navButtons[screen].classList.add('active');
-
-            if (screen === 'history') renderHistory();
-            if (screen === 'favorites') renderFavorites();
+            if (screenName === 'parser') {
+                showParserPart(parserPartName);
+            }
         }
 
-        function showParserPart(part) {
-            if (eventSource) eventSource.close();
+        function showParserPart(partName) {
             Object.values(parserParts).forEach(p => p.classList.add('hidden'));
-            parserParts[part].classList.remove('hidden');
+            parserParts[partName].classList.remove('hidden');
 
-            if (part === 'input') {
+            if (partName === 'input') {
                 parserForm.reset();
-                progressBar.style.width = '0%';
-                progressLabel.textContent = '';
-                progressItemName.textContent = '';
-                currentResult = null;
                 switchInputTab('url');
             }
-            navigateTo('parser');
+        }
+
+        function resetState() {
+            progressBar.style.width = '0%';
+            progressLabel.textContent = '';
+            progressItemName.textContent = '';
         }
 
         // === Input & Form Logic ===
@@ -350,9 +303,9 @@
 
         function handleFormSubmit(event) {
             event.preventDefault();
-            let inputStr, type = activeInputTab;
+            let inputStr;
 
-            if (type === 'url') {
+            if (activeInputTab === 'url') {
                 inputStr = urlInput.value.trim();
             } else {
                 const sellerId = sellerIdInput.value.trim();
@@ -370,16 +323,15 @@
                 return;
             }
 
-            const requestData = { input: inputStr, type: type, date: new Date().toISOString() };
-            saveToHistory(requestData);
-
+            resetState();
             showParserPart('progress');
-            startSSE(inputStr);
+            startSSE(inputStr, selectedCategory);
         }
 
         // === Server-Sent Events (SSE) Logic ===
-        function startSSE(inputStr) {
-            eventSource = new EventSource(`/stream?${new URLSearchParams({input_str: inputStr}).toString()}`);
+        function startSSE(inputStr, category) {
+            const params = new URLSearchParams({ input_str: inputStr, category: category });
+            eventSource = new EventSource(`/stream?${params.toString()}`);
             eventSource.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
             eventSource.onerror = () => {
                 showError("Ошибка соединения с сервером. Попробуйте позже.");
@@ -400,9 +352,8 @@
                     break;
                 case 'result':
                     if(eventSource) eventSource.close();
-                    currentResult = { ...data.data, date: new Date().toISOString() };
-                    displayResults(currentResult.table_data);
-                    downloadButton.onclick = () => window.location.href = `/download/${currentResult.download_filename}`;
+                    displayResults(data.data.table_data);
+                    downloadButton.onclick = () => window.location.href = `/download/${data.data.download_filename}`;
                     showParserPart('result');
                     break;
                 case 'error':
@@ -455,105 +406,9 @@
             resultTable.append(thead, tbody);
         }
 
-        // === Local Storage & Data Rendering ===
-        const getFromStorage = (key) => JSON.parse(localStorage.getItem(key) || '[]');
-        const saveToStorage = (key, data) => localStorage.setItem(key, JSON.stringify(data));
-
-        function saveToHistory(requestData) {
-            let history = getFromStorage('parserHistory');
-            history.unshift(requestData);
-            if (history.length > 50) history.pop();
-            saveToStorage('parserHistory', history);
-        }
-
-        function renderHistory() {
-            const history = getFromStorage('parserHistory');
-            historyList.innerHTML = history.length ? '' : '<p class="text-slate-400 text-center py-8 text-base">История запросов пуста</p>';
-            
-            history.forEach((item, index) => {
-                const el = document.createElement('div');
-                el.className = 'p-5 rounded-xl bg-slate-800/50 hover:bg-slate-800/70 transition-colors flex justify-between items-center';
-                el.innerHTML = `
-                    <div class="overflow-hidden flex-1 mr-4">
-                        <p class="font-semibold text-white text-base truncate mb-1">${item.input}</p>
-                        <p class="text-slate-400 text-sm">${new Date(item.date).toLocaleString('ru-RU')}</p>
-                    </div>
-                    <button class="rerun-btn btn btn-secondary py-2 px-4 text-sm font-medium" data-index="${index}">
-                        Запустить
-                    </button>
-                `;
-                el.querySelector('.rerun-btn').onclick = () => {
-                    const item = getFromStorage('parserHistory')[index];
-                    if (item.type === 'url') {
-                        urlInput.value = item.input;
-                    } else {
-                        const [sellerId, brandId] = item.input.split(' ');
-                        sellerIdInput.value = sellerId || '';
-                        brandIdInput.value = brandId || '';
-                    }
-                    switchInputTab(item.type);
-                    navigateTo('parser');
-                    parserForm.dispatchEvent(new Event('submit', { cancelable: true }));
-                };
-                historyList.appendChild(el);
-            });
-        }
-        
-        function addToFavorites() {
-            if (!currentResult) return;
-            let favorites = getFromStorage('parserFavorites');
-            if (favorites.some(fav => fav.download_filename === currentResult.download_filename)) {
-                tg.showAlert('Этот результат уже в избранном.');
-                return;
-            }
-            favorites.unshift(currentResult);
-            saveToStorage('parserFavorites', favorites);
-            tg.showAlert('Результат добавлен в избранное!');
-        }
-
-        function renderFavorites() {
-            const favorites = getFromStorage('parserFavorites');
-            favoritesList.innerHTML = favorites.length ? '' : '<p class="text-slate-400 text-center py-8 text-base">В избранном пока пусто</p>';
-            
-            favorites.forEach((item, index) => {
-                const el = document.createElement('div');
-                el.className = 'p-5 rounded-xl bg-slate-800/50 hover:bg-slate-800/70 transition-colors';
-                el.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="overflow-hidden flex-1 mr-4">
-                            <p class="font-semibold text-white text-base mb-1">Результат анализа</p>
-                            <p class="text-slate-400 text-sm">${new Date(item.date).toLocaleDateString('ru-RU')}</p>
-                            <p class="text-slate-400 text-sm truncate mt-1">Файл: ${item.download_filename}</p>
-                        </div>
-                        <div class="flex space-x-2 flex-shrink-0">
-                            <button class="view-fav-btn btn btn-secondary py-2 px-3 text-sm" data-index="${index}">
-                                Обзор
-                            </button>
-                            <button class="delete-fav-btn btn btn-danger py-2 px-3 text-sm" data-index="${index}">
-                                ×
-                            </button>
-                        </div>
-                    </div>
-                `;
-                el.querySelector('.view-fav-btn').onclick = () => {
-                    const item = getFromStorage('parserFavorites')[index];
-                    currentResult = item;
-                    displayResults(item.table_data);
-                    downloadButton.onclick = () => window.location.href = `/download/${item.download_filename}`;
-                    showParserPart('result');
-                };
-                el.querySelector('.delete-fav-btn').onclick = () => {
-                    let favs = getFromStorage('parserFavorites');
-                    favs.splice(index, 1);
-                    saveToStorage('parserFavorites', favs);
-                    renderFavorites();
-                };
-                favoritesList.appendChild(el);
-            });
-        }
-
         // === Initial Setup ===
-        showParserPart('input');
+        showScreen('category');
+
     </script>
 </body>
 </html>
