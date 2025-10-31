@@ -7,7 +7,7 @@ import datetime
 import math
 import os
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import PatternFill, Font, Alignment, Border, Side, NamedStyle
+from openpyxl.utils.exceptions import InvalidFileException
 import json
 
 # Заголовки, маскирующиеся под реальный браузер
@@ -146,11 +146,16 @@ def stream_parser(seller_id, brand_id, category):
             time.sleep(random.uniform(1.5, 3))
 
         # 4. Маппинг данных и создание файла
-        yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'})
+        yield json.dumps({'type': 'log', 'message': f'Успешно собрано {len(all_products)} товаров. Формирование таблицы...'})
         mapped_data = map_data(all_products, baskets)
 
         yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
         output_path = create_excel_file(mapped_data, category)
+        
+        if not output_path:
+            # Пробуем создать файл без шаблона
+            yield json.dumps({'type': 'log', 'message': 'Пробуем создать файл без шаблона...'})
+            output_path = create_excel_without_template(mapped_data, category)
         
         if not output_path:
             yield json.dumps({'type': 'error', 'message': 'Не удалось создать Excel-файл.'})
@@ -164,12 +169,114 @@ def stream_parser(seller_id, brand_id, category):
             'data': {
                 'table_data': mapped_data,
                 'download_filename': download_filename,
-                'total_processed': len(all_products)
+                'total_processed': len(all_products),
+                'file_path': output_path
             }
         })
 
     except Exception as e:
         yield json.dumps({'type': 'error', 'message': f'Критическая ошибка: {str(e)}'})
+
+def create_excel_file(data, category):
+    """Создание Excel файла с использованием шаблона"""
+    if not data:
+        return None
+
+    template_path = os.path.join('shablon', f'{category}.xlsx')
+    
+    try:
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(f"Шаблон для категории '{category}' не найден.")
+
+        # Пробуем загрузить шаблон с обработкой ошибок
+        try:
+            wb = load_workbook(template_path)
+            ws = wb.active
+        except (InvalidFileException, KeyError, Exception) as e:
+            print(f"Ошибка загрузки шаблона: {e}")
+            # Если шаблон поврежден, создаем новый файл
+            return create_excel_without_template(data, category)
+
+        # Получаем заголовки из строки 3
+        headers_row3 = []
+        try:
+            if ws.max_row >= 3:
+                headers_row3 = [cell.value for cell in ws[3] if cell.value]
+        except Exception as e:
+            print(f"Ошибка чтения заголовков: {e}")
+            # Если не удалось прочитать заголовки, используем стандартные
+            headers_row3 = list(data[0].keys()) if data else []
+
+        # Если в шаблоне нет заголовков, используем ключи из данных
+        if not headers_row3 and data:
+            headers_row3 = list(data[0].keys())
+
+        # Добавляем данные
+        if data and headers_row3:
+            for row_data in data:
+                row_to_append = []
+                for header in headers_row3:
+                    # Ищем соответствие ключа в данных (игнорируя регистр и пробелы)
+                    found_key = next((k for k in row_data if str(k).strip().lower() == str(header).strip().lower()), None)
+                    row_to_append.append(row_data.get(found_key, ''))
+                
+                try:
+                    ws.append(row_to_append)
+                except Exception as e:
+                    print(f"Ошибка добавления строки: {e}")
+                    continue
+
+        # Создаем папку downloads если не существует
+        if not os.path.exists("downloads"):
+            os.makedirs("downloads")
+        
+        filename = f"result_{category}_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
+        output_path = os.path.join("downloads", filename)
+        
+        try:
+            wb.save(output_path)
+            return output_path
+        except Exception as e:
+            print(f"Ошибка сохранения файла: {e}")
+            # Пробуем сохранить без форматирования
+            return create_excel_without_template(data, category)
+            
+    except Exception as e:
+        print(f"Критическая ошибка при создании Excel: {e}")
+        return create_excel_without_template(data, category)
+
+def create_excel_without_template(data, category):
+    """Создание Excel файла без шаблона (резервный метод)"""
+    if not data:
+        return None
+        
+    try:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Товары"
+        
+        # Добавляем заголовки
+        if data:
+            headers = list(data[0].keys())
+            ws.append(headers)
+            
+            # Добавляем данные
+            for row in data:
+                ws.append([row.get(header, '') for header in headers])
+        
+        # Создаем папку downloads если не существует
+        if not os.path.exists("downloads"):
+            os.makedirs("downloads")
+        
+        filename = f"result_{category}_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
+        output_path = os.path.join("downloads", filename)
+        
+        wb.save(output_path)
+        return output_path
+        
+    except Exception as e:
+        print(f"Ошибка создания Excel без шаблона: {e}")
+        return None
 
 def check_string(s): 
     return bool(re.fullmatch(r'(\d+%3B)*\d+', s))
@@ -303,40 +410,6 @@ def map_data(data, baskets):
         }
         new_data.append(new_item)
     return new_data
-
-def create_excel_file(data, category):
-    if not data:
-        return None
-
-    template_path = os.path.join('shablon', f'{category}.xlsx')
-    if not os.path.exists(template_path):
-        raise FileNotFoundError(f"Шаблон для категории '{category}' не найден.")
-
-    wb = load_workbook(template_path)
-    ws = wb.active
-
-    headers_row3 = [cell.value for cell in ws[3]]
-    
-    if data:
-        for row_data in data:
-            row_to_append = []
-            for header in headers_row3:
-                 found_key = next((k for k in row_data if k.strip().lower() == header.strip().lower()), None)
-                 row_to_append.append(row_data.get(found_key, ''))
-            ws.append(row_to_append)
-            
-    if not os.path.exists("downloads"):
-        os.makedirs("downloads")
-    
-    filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
-    output_path = os.path.join("downloads", filename)
-    
-    try:
-        wb.save(output_path)
-        return output_path
-    except Exception as e:
-        print(f"Ошибка сохранения файла: {e}")
-        return None
 
 def find_options_by_group_name(grouped_options, group_name): 
     try: 
