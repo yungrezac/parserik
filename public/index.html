@@ -385,7 +385,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = JSON.parse(e.data);
             if(data.type !== 'log') ui.progressHeader.classList.remove('hidden');
             switch(data.type) {
-                case 'start': ui.progressHeader.textContent = `Найдено: ${data.total}`; ui.logText.textContent = data.message; break;
+                case 'start': 
+                    ui.progressHeader.textContent = `Найдено: ${data.total}`;
+                    ui.logText.textContent = data.message;
+                    break;
                 case 'progress':
                     ui.progressBar.style.width = `${(data.current / data.total) * 100}%`;
                     ui.progressText.textContent = `${data.current} / ${data.total}`;
@@ -394,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'result':
                     ui.progressHeader.textContent = 'Готово!';
                     ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
-                    const downloadUrl = `/download/${state.user.id}/${data.download_filename}`;
+                    const downloadUrl = `/download/${data.download_filename}`;
                     ui.downloadButton.classList.remove('hidden');
                     ui.downloadButton.textContent = `Скачать Excel`;
                     ui.downloadButton.onclick = () => webApp.openLink(downloadUrl);
@@ -404,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         timestamp: new Date().toISOString(),
                         downloadUrl: downloadUrl,
                     };
-                    await apiRequest('/api/history/add', { historyItem });
+                    // await apiRequest('/api/history/add', { historyItem });
                     
                     es.close(); 
                     onFinish(); 
