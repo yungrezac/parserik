@@ -18,10 +18,8 @@
             --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
 
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
-            --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
-            --tariff-free: #8e8e93;
-            --tariff-pro: #5856d6;
-            --tariff-ultima: #ff9500;
+            --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+            --tariff-free: #8e8e93; --tariff-pro: #5856d6; --tariff-ultima: #ff9500;
         }
 
         body {
@@ -31,65 +29,35 @@
             margin: 0;
             padding: 0 15px 15px 15px;
             -webkit-font-smoothing: antialiased;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            box-sizing: border-box;
-            overflow: hidden;
+            display: flex; flex-direction: column; height: 100vh;
+            box-sizing: border-box; overflow: hidden;
         }
-        
+
         .page { display: none; flex-direction: column; flex-grow: 1; min-height: 0; }
         .page.active { display: flex; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- Header --- */
         .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            margin-bottom: 10px;
-            flex-shrink: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; margin-bottom: 10px; flex-shrink: 0;
         }
         .tariff-display {
-            font-size: 14px;
-            font-weight: 600;
-            padding: 5px 12px;
-            border-radius: 15px;
-            text-transform: uppercase;
+            font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 15px;
+            text-transform: uppercase; color: white;
         }
-        .tariff-free { background-color: var(--tariff-free); color: white; }
-        .tariff-pro { background-color: var(--tariff-pro); color: white; }
-        .tariff-ultima { background-color: var(--tariff-ultima); color: white; }
-        
+        .tariff-free { background-color: var(--tariff-free); }
+        .tariff-pro { background-color: var(--tariff-pro); }
+        .tariff-ultima { background-color: var(--tariff-ultima); }
         .profile-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            background-color: var(--tg-secondary-bg);
-            background-size: cover;
-            background-position: center;
+            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+            background-color: var(--tg-secondary-bg); background-size: cover; background-position: center;
         }
 
-        /* --- Main Parser Steps --- */
-        .step {
-            display: none;
-            flex-direction: column;
-            flex-grow: 1;
-            min-height: 0;
-            animation: stepFadeIn 0.4s ease-in-out;
-        }
-        .step.active { display: flex; }
-        @keyframes stepFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .step { display: none; flex-direction: column; flex-grow: 1; min-height: 0; }
+        .step.active { display: flex; animation: stepFadeIn 0.4s ease-in-out; }
+        @keyframes stepFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin: 0 0 20px 0;
-            padding: 5px 0;
-        }
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 20px 0; padding: 5px 0; }
         
         input[type="text"], input[type="search"] {
             width: 100%; padding: 14px; margin-bottom: 15px; border: none;
@@ -99,38 +67,27 @@
         input::placeholder { color: var(--tg-hint); }
         input:focus { outline: none; box-shadow: 0 0 0 2px var(--tg-link); }
 
-        .list-container {
-            flex-grow: 1; min-height: 0; overflow-y: auto; display: flex;
-            flex-direction: column; gap: 8px; padding-bottom: 5px;
-        }
-        .list-item {
-            background-color: var(--tg-secondary-bg); padding: 14px 18px; border-radius: 10px;
-            cursor: pointer; font-size: 17px; transition: transform 0.15s ease; flex-shrink: 0;
-        }
+        .list-container { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 5px; }
+        .list-item { background-color: var(--tg-secondary-bg); padding: 14px 18px; border-radius: 10px; cursor: pointer; font-size: 17px; transition: transform 0.1s ease; flex-shrink: 0; }
         .list-item:active { transform: scale(0.98); }
         .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); font-weight: 500; }
         .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; background-color: color-mix(in srgb, var(--tg-secondary-bg), var(--tg-bg) 50%); }
 
-        #summary-content { background: var(--tg-secondary-bg); padding: 20px; border-radius: 12px; }
-        #summary-content p { margin: 0 0 12px; font-size: 16px; }
-        #summary-content span { font-weight: 600; float: right; }
+        .placeholder-text { text-align: center; color: var(--tg-hint); padding: 40px 20px; font-size: 16px; }
 
-        /* --- Profile Page --- */
+        #summary-content { background: var(--tg-secondary-bg); padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+        #summary-content p { margin: 0; font-size: 16px; display: flex; justify-content: space-between; }
+        #summary-content span { font-weight: 600; text-align: right; }
+
         #profile-info { display: flex; align-items: center; flex-direction: column; margin-bottom: 25px; }
-        #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; }
+        #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
 
         #history-list { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .history-item {
-            background-color: var(--tg-secondary-bg); padding: 15px; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .history-item-info p { margin: 0 0 4px 0; font-size: 16px; }
+        .history-item { background-color: var(--tg-secondary-bg); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .history-item-info p { margin: 0 0 4px 0; font-size: 16px; word-break: break-word; }
         .history-item-info .date { font-size: 13px; color: var(--tg-hint); }
-        .history-download-btn {
-            background: var(--tg-link); color: var(--tg-button-text); padding: 8px 15px;
-            border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
-        }
+        .history-download-btn { background: var(--tg-link); color: var(--tg-button-text); padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
         .hidden { display: none; }
     </style>
@@ -138,22 +95,13 @@
 <body>
 
 <div class="app-header">
-    <div></div> <!-- Placeholder for spacing -->
+    <div></div> <!-- Placeholder -->
     <div class="tariff-display" id="tariff-display"></div>
     <div class="profile-avatar" id="profile-avatar"></div>
 </div>
 
-<div id="parser-page" class="page active">
-    <div id="step1" class="step active"> 
-        <h1>Шаг 1: ID Продавца</h1>
-        <input type="text" id="seller-id" placeholder="Введите ID продавца">
-    </div>
-    <!-- Steps 2, 3, 4, 5 and progress -->
-    <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск..."> <div id="category-list" class="list-container"></div> </div>
-    <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск..."> <div id="subcategory-list" class="list-container"></div> </div>
-    <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опц.)</h1> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div>
-    <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"> <p>Продавец: <span id="summary-seller-id"></span></p> <p>Категория: <span id="summary-category"></span></p> <p>Подкатегория: <span id="summary-subcategory"></span></p> <p>Бренд: <span id="summary-brand-id"></span></p> </div> </div>
-    <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div id="progress-bar-container" style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
+<div id="parser-page" class="page">
+    <!-- Steps will be injected here by JS -->
 </div>
 
 <div id="profile-page" class="page">
@@ -171,43 +119,46 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    // --- STATE MANAGEMENT ---
     const state = { currentPage: 'parser', currentStep: 1, categoriesData: {}, user: null, history: [],
                     sellerId: '', brandId: '', category: '', subcategory: '' };
-    const ui = { /* All UI elements */ }; // (omitted for brevity, will be populated)
 
-    // --- UI MAPPING (populate ui object) ---
-    const allIds = ['parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-seller-id', 'summary-category', 'summary-subcategory', 'summary-brand-id', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'app-header', 'tariff-display', 'profile-avatar', 'profile-info', 'profile-img', 'profile-name', 'history-list'];
-    allIds.forEach(id => {
-        const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-        ui[camelCaseId] = document.getElementById(id);
-    });
+    const ui = {};
+    const initUI = () => {
+        const parserPage = document.getElementById('parser-page');
+        parserPage.innerHTML = `
+            <div id="step1" class="step"> <h1>Шаг 1: ID Продавца</h1> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div>
+            <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск..."> <div id="category-list" class="list-container"></div> </div>
+            <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск..."> <div id="subcategory-list" class="list-container"></div> </div>
+            <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опц.)</h1> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div>
+            <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"></div> </div>
+            <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
+        `;
+        
+        const ids = ['parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list'];
+        ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
+        showPage('parser');
+        goToStep(1);
+    };
 
-    // --- NAVIGATION ---
     const showPage = (page) => {
         state.currentPage = page;
-        Object.values(ui).filter(el => el && el.classList.contains('page')).forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         ui[`${page}Page`].classList.add('active');
         updateMainButton();
         updateBackButton();
     };
 
     const goToStep = (step) => {
-        if (!ui[`step${step}`]) return;
         state.currentStep = step;
         document.querySelectorAll('#parser-page .step').forEach(s => s.classList.remove('active'));
-        ui[`step${step}`].classList.add('active');
+        if (ui[`step${step}`]) ui[`step${step}`].classList.add('active');
         updateMainButton();
         updateBackButton();
     };
 
-    // --- TELEGRAM BUTTONS ---
     const updateBackButton = () => {
-        if (state.currentPage === 'profile' || (state.currentPage === 'parser' && state.currentStep > 1 && state.currentStep !== 'progress')) {
-            webApp.BackButton.show();
-        } else {
-            webApp.BackButton.hide();
-        }
+        const shouldShow = state.currentPage === 'profile' || (state.currentPage === 'parser' && state.currentStep > 1 && state.currentStep !== 'progress');
+        shouldShow ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
@@ -218,10 +169,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let isEnabled = false, text = 'Далее';
         switch(state.currentStep) {
             case 1: isEnabled = ui.sellerId.value.trim(); break;
-            case 2: isEnabled = state.category; break;
-            case 3: isEnabled = state.subcategory; break;
+            case 2: isEnabled = !!state.category; break;
+            case 3: isEnabled = !!state.subcategory; break;
             case 4: isEnabled = true; text = ui.brandId.value.trim() ? 'Далее' : 'Пропустить'; break;
             case 5: isEnabled = true; text = 'Запустить'; break;
+            default: webApp.MainButton.hide(); return;
         }
         webApp.MainButton.setText(text);
         isEnabled ? webApp.MainButton.enable().setParams({ color: 'var(--tg-theme-button-color)' }) : webApp.MainButton.disable().setParams({ color: '#a8a8a8' });
@@ -235,8 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case 3: goToStep(4); break;
             case 4: 
                 state.brandId = ui.brandId.value.trim();
-                ui.summarySellerId.textContent = state.sellerId; ui.summaryCategory.textContent = state.category;
-                ui.summarySubcategory.textContent = state.subcategory; ui.summaryBrandId.textContent = state.brandId || 'Все бренды';
+                ui.summaryContent.innerHTML = `<p>Продавец: <span>${state.sellerId}</span></p><p>Категория: <span>${state.category}</span></p><p>Подкатегория: <span>${state.subcategory}</span></p><p>Бренд: <span>${state.brandId || 'Все'}</span></p>`;
                 goToStep(5);
                 break;
             case 5: startParsing(); break;
@@ -246,64 +197,45 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.onEvent('backButtonClicked', () => {
         if (state.currentPage === 'profile') {
             showPage('parser');
-        } else if (state.currentPage === 'parser' && state.currentStep > 1) {
+        } else if (state.currentStep === 2) {
+            state.category = '';
+            goToStep(1);
+        } else if (state.currentStep === 3) {
+            state.subcategory = '';
+            renderList(ui.categoryList, Object.keys(state.categoriesData), 'category'); // Re-render to clear selection
+            goToStep(2);
+        } else if (state.currentStep > 1) {
             goToStep(state.currentStep - 1);
         }
     });
 
-    // --- API & DATA FETCHING ---
     const apiRequest = async (endpoint, body) => {
-        const response = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-        return response.json();
+        const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
     };
 
-    const initApp = async () => {
-        try {
-            const initData = webApp.initData;
-            if (!initData) { document.body.innerHTML = 'Not a Telegram Web App'; return; }
-
-            state.user = await apiRequest('/api/me', { initData });
-            
-            // Populate Header
-            ui.tariffDisplay.textContent = state.user.tariff;
-            ui.tariffDisplay.className = `tariff-display tariff-${state.user.tariff}`;
-            if (webApp.initDataUnsafe.user.photo_url) {
-                ui.profileAvatar.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
-            }
-
-            await fetchCategories();
-            updateMainButton();
-            updateBackButton();
-        } catch(e) { console.error('Init failed', e); webApp.showAlert('Ошибка инициализации. Попробуйте перезагрузить.'); }
-    };
-    
-    const fetchCategories = async () => {
-        const response = await fetch('/categories');
-        state.categoriesData = await response.json();
-        renderList(ui.categoryList, Object.keys(state.categoriesData), 'category');
-    };
-
-    // --- UI RENDERING ---
     const renderList = (element, items, type, filter = '') => {
         element.innerHTML = '';
         const filteredItems = items.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
-        if (filteredItems.length === 0) { element.innerHTML = '<p style="text-align:center; color: var(--tg-hint); padding: 20px;">Ничего не найдено</p>'; return; }
+        if (filteredItems.length === 0) { element.innerHTML = '<p class="placeholder-text">Ничего не найдено</p>'; return; }
 
         filteredItems.forEach(item => {
             const el = document.createElement('div');
             el.className = 'list-item';
             el.textContent = item;
-            el.dataset.id = item;
             
-            let isDisabled = false;
-            if (type === 'category') isDisabled = Object.keys(state.categoriesData[item] || {}).length === 0;
-            if (type === 'subcategory') {
+            let isDisabled = false, title = '';
+            if (type === 'category') {
+                isDisabled = Object.keys(state.categoriesData[item] || {}).length === 0;
+                if(isDisabled) title = 'Нет подкатегорий';
+            } else if (type === 'subcategory') {
                 const cols = state.categoriesData[state.category]?.[item];
                 isDisabled = !Array.isArray(cols) || cols.length === 0;
+                 if(isDisabled) title = 'Нет столбцов для парсинга';
             }
-            if (isDisabled) el.classList.add('disabled');
-            else el.onclick = () => { selectItem(type, item); };
+            if (isDisabled) { el.classList.add('disabled'); el.title = title; }
+            else { el.onclick = () => selectItem(type, item); }
 
             if ((type === 'category' && state.category === item) || (type === 'subcategory' && state.subcategory === item)) {
                 el.classList.add('selected');
@@ -313,25 +245,24 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const selectItem = (type, value) => {
-        if (type === 'category') { state.category = value; state.subcategory = null; }
+        if (type === 'category') { state.category = value; state.subcategory = ''; }
         else { state.subcategory = value; }
-        document.querySelectorAll(`#${type}-list .list-item`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
+        renderList(ui[`${type}List`], Object.keys(type === 'category' ? state.categoriesData : state.categoriesData[state.category]), type);
         updateMainButton();
     };
 
     const renderHistory = () => {
         ui.historyList.innerHTML = '';
-        if (state.history.length === 0) {
-            ui.historyList.innerHTML = '<p style="text-align:center; color: var(--tg-hint); padding: 20px;">История парсингов пуста.</p>';
-            return;
+        if (!state.history || state.history.length === 0) {
+            ui.historyList.innerHTML = '<p class="placeholder-text">История парсингов пуста.</p>'; return;
         }
         state.history.forEach(item => {
-            const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
             const el = document.createElement('div');
             el.className = 'history-item';
             el.innerHTML = `
                 <div class="history-item-info">
-                    <p><b>${item.category} / ${item.subcategory}</b></p>
+                    <p><b>${item.subcategory}</b></p>
                     <p class="date">${date}</p>
                 </div>
                 <button class="history-download-btn">Скачать</button>
@@ -339,73 +270,96 @@ document.addEventListener('DOMContentLoaded', function() {
             el.querySelector('.history-download-btn').onclick = () => webApp.openLink(`/download/${item.filename}`);
             ui.historyList.appendChild(el);
         });
-    }
-
-    // --- EVENT HANDLERS ---
-    ui.profileAvatar.onclick = async () => {
-        try {
-            state.history = await apiRequest('/api/history', { initData: webApp.initData });
-            ui.profileImg.src = webApp.initDataUnsafe.user.photo_url || '';
-            ui.profileName.textContent = state.user.first_name;
-            renderHistory();
-            showPage('profile');
-        } catch(e) { webApp.showAlert('Не удалось загрузить историю.'); }
     };
-    
-    ['categorySearch', 'subcategorySearch'].forEach(id => {
-        ui[id].addEventListener('input', e => {
-            const type = id.includes('category') ? 'category' : 'subcategory';
-            const source = type === 'category' ? Object.keys(state.categoriesData) : (state.category ? Object.keys(state.categoriesData[state.category]) : []);
-            renderList(ui[`${type}List`], source, type, e.target.value);
-        });
-    });
-    Object.values(ui.inputs).forEach(el => el && el.addEventListener('input', updateMainButton));
 
-    // --- PARSING LOGIC ---
     const startParsing = () => {
         goToStep('progress');
-        /* ... (parsing logic is the same as before, but with initData) ... */
         const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory, initData: webApp.initData });
         if (state.brandId) params.append('brand_id', state.brandId);
 
         const es = new EventSource(`/stream?${params.toString()}`);
-        const onFinish = () => {
+        const onFinish = (isError=false) => {
             webApp.MainButton.setText('Начать заново').show().enable();
-            webApp.onEvent('mainButtonClicked', () => window.location.reload());
+            webApp.MainButton.onClick(() => window.location.reload());
             webApp.BackButton.hide();
         };
         es.onmessage = e => {
             const data = JSON.parse(e.data);
-            [ui.progressBarContainer, ui.progressText, ui.logText].forEach(el => el.classList.remove('hidden'));
+            if(data.type !== 'log') ui.progressHeader.classList.remove('hidden');
             switch(data.type) {
-                case 'start': ui.progressHeader.textContent = `Найдено: ${data.total} товаров`; ui.logText.textContent = data.message; break;
+                case 'start': ui.progressHeader.textContent = `Найдено: ${data.total}`; ui.logText.textContent = data.message; break;
                 case 'progress':
                     ui.progressBar.style.width = `${(data.current / data.total) * 100}%`;
                     ui.progressText.textContent = `${data.current} / ${data.total}`;
-                    ui.logText.textContent = data.message;
+                    if(data.message) ui.logText.textContent = data.message;
                     break;
                 case 'result':
                     ui.progressHeader.textContent = 'Готово!';
-                    ui.logText.textContent = 'Файл успешно создан.';
+                    ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
                     ui.downloadButton.classList.remove('hidden');
                     ui.downloadButton.textContent = `Скачать Excel`;
                     ui.downloadButton.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
-                    es.close(); onFinish();
-                    break;
+                    es.close(); onFinish(); break;
                 case 'error':
                     ui.progressHeader.textContent = 'Ошибка';
                     ui.logText.textContent = data.message; ui.logText.style.color = 'var(--tg-destructive)';
-                    es.close(); onFinish();
-                    break;
+                    es.close(); onFinish(true); break;
             }
         };
-        es.onerror = () => { 
-            ui.progressHeader.textContent = 'Ошибка сети'; ui.logText.textContent = 'Потеряно соединение.';
-            es.close(); onFinish();
+        es.onerror = (e) => { 
+            ui.progressHeader.textContent = 'Ошибка сети'; ui.logText.textContent = 'Потеряно соединение с сервером.';
+            es.close(); onFinish(true);
         };
     };
 
-    // --- INITIALIZATION ---
+    const initApp = async () => {
+        try {
+            if (!webApp.initData) { document.body.innerHTML = '<h1 style="text-align:center; margin-top: 50px;">Не является приложением Telegram</h1>'; return; }
+            
+            initUI();
+
+            ui.profileAvatar.onclick = async () => {
+                try {
+                    webApp.showPopup({title: 'Загрузка', message: 'Получаем историю...'});
+                    state.history = await apiRequest('/api/history', { initData: webApp.initData });
+                    ui.profileImg.src = webApp.initDataUnsafe.user?.photo_url || '';
+                    ui.profileName.textContent = state.user.first_name;
+                    renderHistory();
+                    webApp.closePopup();
+                    showPage('profile');
+                } catch(e) { webApp.showAlert(`Не удалось загрузить историю: ${e.message}`); }
+            };
+            
+            [ui.sellerId, ui.brandId].forEach(input => input.addEventListener('input', updateMainButton));
+            [ui.categorySearch, ui.subcategorySearch].forEach(input => {
+                input.addEventListener('input', e => {
+                    const type = input.id.includes('category') ? 'category' : 'subcategory';
+                    const source = type === 'category' ? Object.keys(state.categoriesData) : (state.category ? Object.keys(state.categoriesData[state.category]) : []);
+                    renderList(ui[`${type}List`], source, type, e.target.value);
+                });
+            });
+
+            state.user = await apiRequest('/api/me', { initData: webApp.initData });
+            
+            ui.tariffDisplay.textContent = state.user.tariff;
+            ui.tariffDisplay.className = `tariff-display tariff-${state.user.tariff}`;
+            if (webApp.initDataUnsafe.user?.photo_url) {
+                ui.profileAvatar.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
+            }
+
+            const categories = await fetch('/categories').then(res => res.json());
+            state.categoriesData = categories;
+            renderList(ui.categoryList, Object.keys(state.categoriesData), 'category');
+            
+            updateMainButton();
+            updateBackButton();
+
+        } catch(e) { 
+            webApp.showAlert(`Критическая ошибка инициализации: ${e.message}`);
+            document.body.innerHTML = `<h1 style="text-align:center; margin-top: 50px; color: var(--tg-destructive);">Ошибка: ${e.message}</h1><p style="text-align:center; color: var(--tg-hint)">Попробуйте перезапустить приложение.</p>`;
+        }
+    };
+
     initApp();
 });
 </script>
