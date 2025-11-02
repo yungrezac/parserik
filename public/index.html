@@ -96,7 +96,7 @@
         #summary-content p { margin: 0; font-size: 16px; display: flex; justify-content: space-between; }
         #summary-content span { font-weight: 600; text-align: right; }
 
-        #profile-page { padding-top: 15px; }
+        #profile-page { padding-top: 15px; position: relative; }
         #profile-info { display: flex; align-items: center; flex-direction: column; margin-bottom: 25px; }
         #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
@@ -128,6 +128,19 @@
             width: 100%;
         }
 
+        /* Тариф в правом верхнем углу на странице профиля */
+        .profile-tariff-display {
+            position: absolute;
+            right: 0;
+            top: 15px;
+            font-size: 12px; 
+            font-weight: 600; 
+            padding: 4px 10px; 
+            border-radius: 12px;
+            text-transform: uppercase; 
+            color: white;
+        }
+
         #history-list { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .history-item { background-color: var(--tg-secondary-bg); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
         .history-item-info p { margin: 0 0 4px 0; font-size: 16px; word-break: break-word; }
@@ -149,10 +162,12 @@
 </div>
 
 <div id="profile-page" class="page">
+    <!-- Тариф в правом верхнем углу -->
+    <div class="profile-tariff-display" id="profile-tariff"></div>
+    
     <div id="profile-info">
         <img id="profile-img" alt="Avatar">
         <h2 id="profile-name"></h2>
-        <div class="tariff-display" id="profile-tariff"></div>
     </div>
     
     <h1 class="profile-section-title">Информация о профиле</h1>
@@ -375,10 +390,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 ui.profileRegistrationDate.textContent = registrationDate.toLocaleDateString('ru-RU');
             }
             
-            // Устанавливаем тариф
+            // Устанавливаем тариф в правом верхнем углу
             if (state.user) {
                 ui.profileTariff.textContent = state.user.tariff;
-                ui.profileTariff.className = `tariff-display tariff-${state.user.tariff}`;
+                ui.profileTariff.className = `profile-tariff-display tariff-${state.user.tariff}`;
             }
             
             renderHistory();
