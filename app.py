@@ -18,8 +18,8 @@ port = int(os.environ.get('PORT', 5000))
 
 # --- Конфигурация для хранения данных ---
 DATA_DIR = 'data'
-USERS_FILE = os.path.join(DATA_DIR, 'users.json')
-HISTORY_FILE = os.path.join(DATA_DIR, 'history.json')
+# USERS_FILE = os.path.join(DATA_DIR, 'users.json') # No longer needed
+# HISTORY_FILE = os.path.join(DATA_DIR, 'history.json') # No longer needed
 
 # --- Функции для работы с файлами ---
 def load_data(file_path):
@@ -37,78 +37,29 @@ def save_data(file_path, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 # --- Аутентификация и управление пользователями ---
-def is_valid_telegram_data(init_data_str):
-    if not init_data_str:
-        return None, False
-    try:
-        params = dict(x.split('=', 1) for x in unquote(init_data_str).split('&'))
-        user_data = json.loads(params['user'])
-        return user_data, True
-    except Exception as e:
-        print(f"Could not parse initData: {e}")
-        return None, False
-
 def get_user_profile(user_data):
-    users = load_data(USERS_FILE)
-    user_id = str(user_data.get('id'))
-    
-    if user_id not in users:
-        users[user_id] = {
-            'id': user_id,
-            'first_name': user_data.get('first_name', ''),
-            'last_name': user_data.get('last_name', ''),
-            'username': user_data.get('username', ''),
-            'tariff': 'free',
-            'created_at': datetime.datetime.utcnow().isoformat()
-        }
-        save_data(USERS_FILE, users)
-        
-    return users[user_id]
+    # Mock user profile, as there's no authentication
+    return {
+        'id': 'anonymous',
+        'first_name': user_data.get('first_name', 'Anonymous'),
+        'last_name': user_data.get('last_name', ''),
+        'username': user_data.get('username', 'anonymous'),
+        'tariff': 'free',
+        'created_at': datetime.datetime.utcnow().isoformat()
+    }
 
 # --- API маршруты ---
 @app.route('/api/me', methods=['POST'])
 def get_me():
     init_data = request.json.get('initData')
-    user_data, is_valid = is_valid_telegram_data(init_data)
-    if not is_valid:
-        return jsonify({"error": "Invalid initData"}), 403
-    
+    try:
+        params = dict(x.split('=', 1) for x in unquote(init_data).split('&'))
+        user_data = json.loads(params.get('user', '{}'))
+    except Exception:
+        user_data = {}
+        
     user_profile = get_user_profile(user_data)
     return jsonify(user_profile)
-
-@app.route('/api/history', methods=['POST'])
-def get_history():
-    init_data = request.json.get('initData')
-    user_data, is_valid = is_valid_telegram_data(init_data)
-    if not is_valid:
-        return jsonify({"error": "Invalid initData"}), 403
-        
-    user_id = str(user_data.get('id'))
-    history = load_data(HISTORY_FILE)
-    user_history = history.get(user_id, [])
-    return jsonify(user_history)
-
-@app.route('/api/history/add', methods=['POST'])
-def add_to_history():
-    init_data = request.json.get('initData')
-    user_data, is_valid = is_valid_telegram_data(init_data)
-    if not is_valid:
-        return jsonify({"error": "Invalid initData"}), 403
-        
-    user_id = str(user_data.get('id'))
-    history_item = request.json.get('historyItem')
-
-    history = load_data(HISTORY_FILE)
-    if user_id not in history:
-        history[user_id] = []
-    
-    history[user_id].insert(0, history_item)
-    # Ограничение на 50 записей
-    history[user_id] = history[user_id][:50]
-    
-    save_data(HISTORY_FILE, history)
-    return jsonify({"success": True})
-
 
 # --- Основные маршруты ---
 @app.route('/')
@@ -126,10 +77,7 @@ def get_categories():
 @app.route('/stream')
 def stream_run():
     args = request.args
-    user_data, is_valid = is_valid_telegram_data(args.get('initData'))
-    if not is_valid:
-        return Response(json.dumps({'type': 'error', 'message': 'Ошибка аутентификации.'}), mimetype='text/event-stream')
-
+    
     if not all(k in args for k in ['seller_id', 'category', 'subcategory']):
         return Response("Ошибка: не указаны параметры.", status=400)
 
@@ -141,10 +89,8 @@ def stream_run():
             if not columns:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
-            
-            user_id = str(user_data.get('id'))
 
-            for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns, user_id):
+            for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns):
                 yield f"data: {json.dumps(update)}\n\n"
 
         except Exception as e:
@@ -164,7 +110,7 @@ headers = {
     'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 }
 
-def stream_parser(seller_id, brand_id, columns, user_id):
+def stream_parser(seller_id, brand_id, columns):
     all_products = []
     yield {'type': 'log', 'message': 'Получение карты маршрутов WB...'}
     baskets = get_mediabasket_route_map()
@@ -201,7 +147,7 @@ def stream_parser(seller_id, brand_id, columns, user_id):
     yield {'type': 'log', 'message': 'Формирование таблицы...'}
     mapped_data = map_data(all_products, columns)
     yield {'type': 'log', 'message': 'Создание Excel-файла...'}
-    output_path = create_excel_file(mapped_data, columns, user_id)
+    output_path = create_excel_file(mapped_data, columns)
     if not output_path: raise Exception("Не удалось создать Excel-файл.")
     download_filename = os.path.basename(output_path)
 
@@ -251,15 +197,15 @@ def find_value_in_options(options, name):
         if isinstance(opt, dict) and opt.get('name') == name: return opt.get('value')
     return ''
 
-def create_excel_file(data, columns, user_id):
+def create_excel_file(data, columns):
     if not data: return None
     
-    # Создаем директорию для пользователя
-    user_downloads_dir = os.path.join('downloads', user_id)
-    os.makedirs(user_downloads_dir, exist_ok=True)
+    # Create downloads directory if it doesn't exist
+    downloads_dir = 'downloads'
+    os.makedirs(downloads_dir, exist_ok=True)
     
     filename = f"wb_parse_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
-    output_path = os.path.join(user_downloads_dir, filename)
+    output_path = os.path.join(downloads_dir, filename)
     
     wb = Workbook()
     ws = wb.active
