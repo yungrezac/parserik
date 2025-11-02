@@ -141,6 +141,187 @@
             color: white;
         }
 
+        /* Стили для шага прогресса */
+        .progress-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .progress-header {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--tg-text);
+        }
+
+        .progress-card {
+            background: var(--tg-secondary-bg);
+            border-radius: 16px;
+            padding: 25px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-numbers {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--tg-text);
+        }
+
+        .progress-percentage {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--tg-link);
+        }
+
+        .progress-bar-container {
+            background-color: color-mix(in srgb, var(--tg-secondary-bg) 60%, var(--tg-bg) 40%);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 12px;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-image: var(--button-gradient);
+            transition: width 0.5s ease-in-out;
+            border-radius: 10px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--tg-hint);
+        }
+
+        .log-container {
+            background: var(--tg-secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 25px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .log-text {
+            font-size: 15px;
+            color: var(--tg-text);
+            text-align: center;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .log-text.error {
+            color: var(--tg-destructive);
+        }
+
+        .log-text.success {
+            color: #34c759;
+            font-weight: 600;
+        }
+
+        .download-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .download-button {
+            background-image: var(--button-gradient);
+            color: var(--tg-button-text);
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 17px;
+            border: none;
+            box-shadow: var(--button-shadow);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-button:active {
+            transform: scale(0.95);
+        }
+
+        .file-info {
+            font-size: 14px;
+            color: var(--tg-hint);
+            text-align: center;
+        }
+
+        .restart-button {
+            background: transparent;
+            color: var(--tg-link);
+            border: 2px solid var(--tg-link);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        .restart-button:active {
+            background: var(--tg-link);
+            color: var(--tg-button-text);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: var(--tg-hint);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--tg-hint);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background-color: #34c759;
+        }
+
+        .status-dot.error {
+            background-color: var(--tg-destructive);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         #history-list { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .history-item { background-color: var(--tg-secondary-bg); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
         .history-item-info p { margin: 0 0 4px 0; font-size: 16px; word-break: break-word; }
@@ -216,10 +397,42 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск..."> <div id="subcategory-list" class="list-container"></div> </div>
             <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опц.)</h1> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div>
             <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"></div> </div>
-            <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
+            <div id="step-progress" class="step">
+                <div class="progress-container">
+                    <h1 class="progress-header" id="progress-header">Начинаем парсинг</h1>
+                    
+                    <div class="progress-card">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="status-dot"></div>
+                            <span id="status-text">Подготовка к парсингу</span>
+                        </div>
+                        <div class="progress-stats">
+                            <div class="progress-numbers" id="progress-numbers">0 / 0</div>
+                            <div class="progress-percentage" id="progress-percentage">0%</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>Начало</span>
+                            <span>Завершено</span>
+                        </div>
+                    </div>
+
+                    <div class="log-container">
+                        <p class="log-text" id="log-text">Инициализация процесса парсинга...</p>
+                    </div>
+
+                    <div class="download-section" id="download-section" style="display: none;">
+                        <button class="download-button" id="download-button">Скачать Excel файл</button>
+                        <div class="file-info" id="file-info"></div>
+                        <button class="restart-button" id="restart-button">Новый парсинг</button>
+                    </div>
+                </div>
+            </div>
         `;
         
-        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'];
+        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-numbers', 'progress-percentage', 'log-text', 'download-button', 'download-section', 'file-info', 'restart-button', 'status-dot', 'status-text', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'];
         ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
         showPage('parser');
         goToStep(1);
@@ -366,6 +579,130 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    const updateProgressUI = (data) => {
+        const percentage = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
+        
+        ui.progressBar.style.width = `${percentage}%`;
+        ui.progressNumbers.textContent = `${data.current} / ${data.total}`;
+        ui.progressPercentage.textContent = `${percentage}%`;
+        
+        if (data.message) {
+            ui.logText.textContent = data.message;
+        }
+    };
+
+    const setStatus = (type, message) => {
+        const statusDot = ui.statusDot;
+        const statusText = ui.statusText;
+        
+        statusDot.className = 'status-dot';
+        statusText.textContent = message;
+        
+        switch(type) {
+            case 'active':
+                statusDot.classList.add('active');
+                break;
+            case 'error':
+                statusDot.classList.add('error');
+                ui.logText.classList.add('error');
+                break;
+            case 'success':
+                statusDot.classList.add('active');
+                ui.logText.classList.add('success');
+                break;
+        }
+    };
+
+    const startParsing = () => {
+        goToStep('progress');
+        webApp.MainButton.hide();
+        webApp.BackButton.hide();
+
+        // Сброс UI состояния
+        ui.progressBar.style.width = '0%';
+        ui.progressNumbers.textContent = '0 / 0';
+        ui.progressPercentage.textContent = '0%';
+        ui.logText.textContent = 'Инициализация процесса парсинга...';
+        ui.logText.className = 'log-text';
+        ui.downloadSection.style.display = 'none';
+        setStatus('active', 'Подготовка к парсингу');
+
+        const params = new URLSearchParams({ 
+            seller_id: state.sellerId, 
+            category: state.category, 
+            subcategory: state.subcategory, 
+            initData: webApp.initData 
+        });
+        if (state.brandId) params.append('brand_id', state.brandId);
+
+        const es = new EventSource(`/stream?${params.toString()}`);
+        
+        es.onopen = () => {
+            setStatus('active', 'Установлено соединение с сервером');
+        };
+
+        es.onmessage = e => {
+            const data = JSON.parse(e.data);
+            
+            switch(data.type) {
+                case 'start':
+                    ui.progressHeader.textContent = `Парсинг данных`;
+                    ui.logText.textContent = `Найдено товаров: ${data.total}`;
+                    setStatus('active', 'Начало парсинга');
+                    break;
+                    
+                case 'progress':
+                    updateProgressUI(data);
+                    setStatus('active', 'Идет парсинг товаров');
+                    break;
+                    
+                case 'result':
+                    ui.progressHeader.textContent = 'Парсинг завершен!';
+                    ui.logText.textContent = `Успешно обработано ${data.total} товаров`;
+                    ui.logText.classList.add('success');
+                    setStatus('success', 'Парсинг завершен');
+                    
+                    // Показываем секцию загрузки
+                    ui.downloadSection.style.display = 'flex';
+                    ui.downloadButton.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
+                    ui.fileInfo.textContent = `Файл: ${data.download_filename}`;
+                    ui.restartButton.onclick = () => window.location.reload();
+                    
+                    es.close();
+                    break;
+                    
+                case 'error':
+                    ui.progressHeader.textContent = 'Ошибка';
+                    ui.logText.textContent = data.message;
+                    ui.logText.classList.add('error');
+                    setStatus('error', 'Ошибка парсинга');
+                    
+                    // Показываем кнопку перезапуска даже при ошибке
+                    ui.downloadSection.style.display = 'flex';
+                    ui.downloadButton.style.display = 'none';
+                    ui.fileInfo.textContent = 'Попробуйте запустить парсинг снова';
+                    ui.restartButton.onclick = () => window.location.reload();
+                    
+                    es.close();
+                    break;
+            }
+        };
+
+        es.onerror = (e) => {
+            ui.progressHeader.textContent = 'Ошибка соединения';
+            ui.logText.textContent = 'Потеряно соединение с сервером. Проверьте интернет и попробуйте снова.';
+            ui.logText.classList.add('error');
+            setStatus('error', 'Ошибка соединения');
+            
+            ui.downloadSection.style.display = 'flex';
+            ui.downloadButton.style.display = 'none';
+            ui.fileInfo.textContent = 'Проверьте подключение к интернету';
+            ui.restartButton.onclick = () => window.location.reload();
+            
+            es.close();
+        };
+    };
+
     const loadProfileData = async () => {
         try {
             // Показываем индикатор загрузки
@@ -404,50 +741,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } finally {
             webApp.MainButton.hideProgress();
         }
-    };
-
-    const startParsing = () => {
-        goToStep('progress');
-        const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory, initData: webApp.initData });
-        if (state.brandId) params.append('brand_id', state.brandId);
-
-        const es = new EventSource(`/stream?${params.toString()}`);
-        const onFinish = (isError=false) => {
-            const mainButton = webApp.MainButton;
-            mainButton.setText('Начать заново');
-            mainButton.onClick(() => window.location.reload());
-            mainButton.setParams({ color: webApp.themeParams.button_color || '#007AFF' });
-            mainButton.show();
-            mainButton.enable();
-            webApp.BackButton.hide();
-        };
-        es.onmessage = e => {
-            const data = JSON.parse(e.data);
-            if(data.type !== 'log') ui.progressHeader.classList.remove('hidden');
-            switch(data.type) {
-                case 'start': ui.progressHeader.textContent = `Найдено: ${data.total}`; ui.logText.textContent = data.message; break;
-                case 'progress':
-                    ui.progressBar.style.width = `${(data.current / data.total) * 100}%`;
-                    ui.progressText.textContent = `${data.current} / ${data.total}`;
-                    if(data.message) ui.logText.textContent = data.message;
-                    break;
-                case 'result':
-                    ui.progressHeader.textContent = 'Готово!';
-                    ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
-                    ui.downloadButton.classList.remove('hidden');
-                    ui.downloadButton.textContent = `Скачать Excel`;
-                    ui.downloadButton.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
-                    es.close(); onFinish(); break;
-                case 'error':
-                    ui.progressHeader.textContent = 'Ошибка';
-                    ui.logText.textContent = data.message; ui.logText.style.color = 'var(--tg-destructive)';
-                    es.close(); onFinish(true); break;
-            }
-        };
-        es.onerror = (e) => { 
-            ui.progressHeader.textContent = 'Ошибка сети'; ui.logText.textContent = 'Потеряно соединение с сервером.';
-            es.close(); onFinish(true);
-        };
     };
 
     const initApp = async () => {
