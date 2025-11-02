@@ -35,12 +35,7 @@
             overflow: hidden;
         }
 
-        .container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease-in-out;
-        }
+        .container { flex-grow: 1; display: flex; flex-direction: column; }
         
         .step {
             display: none;
@@ -49,9 +44,7 @@
             animation: fadeIn 0.4s ease-in-out;
         }
 
-        .step.active {
-            display: flex;
-        }
+        .step.active { display: flex; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -65,16 +58,10 @@
         
         .input-group { margin-bottom: 25px; }
 
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            font-size: 15px;
-        }
-
         input[type="text"], input[type="search"] {
             width: 100%;
             padding: 14px;
+            margin-bottom: 15px;
             border: 1px solid transparent;
             border-radius: 10px;
             font-size: 17px;
@@ -86,8 +73,6 @@
         input::placeholder { color: var(--tg-hint); }
         input:focus { outline: none; background-color: color-mix(in srgb, var(--tg-secondary-bg) 85%, transparent); box-shadow: 0 0 0 2px var(--tg-link); }
 
-        .columns-container { display: flex; gap: 15px; flex-grow: 1; min-height: 0; }
-        .category-column, .subcategory-column { width: 50%; display: flex; flex-direction: column; }
         .list-box {
             flex-grow: 1;
             overflow-y: auto;
@@ -132,38 +117,36 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
         #download-button:hover { transform: translateY(-2px); box-shadow: var(--button-hover-shadow); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="step1" class="step active"> 
-        <h1>ID Продавца</h1>
+        <h1>Шаг 1: ID Продавца</h1>
         <div class="input-group"> 
             <input type="text" id="seller-id" placeholder="Введите ID продавца"> 
         </div>
     </div>
     <div id="step2" class="step">
-        <h1>Категория</h1>
-        <div class="columns-container">
-            <div class="category-column">
-                <input type="search" id="category-search" class="search-box" placeholder="Поиск...">
-                <div id="category-list" class="list-box"></div>
-            </div>
-            <div class="subcategory-column">
-                <input type="search" id="subcategory-search" class="search-box" placeholder="Поиск...">
-                <div id="subcategory-list" class="list-box"></div>
-            </div>
-        </div>
+        <h1>Шаг 2: Категория</h1>
+        <input type="search" id="category-search" placeholder="Поиск категории...">
+        <div id="category-list" class="list-box"></div>
     </div>
     <div id="step3" class="step">
-        <h1>ID Бренда (опционально)</h1>
+        <h1>Шаг 3: Подкатегория</h1>
+        <input type="search" id="subcategory-search" placeholder="Поиск подкатегории...">
+        <div id="subcategory-list" class="list-box"></div>
+    </div>
+    <div id="step4" class="step">
+        <h1>Шаг 4: ID Бренда (опционально)</h1>
         <div class="input-group">
             <input type="text" id="brand-id" placeholder="Можно оставить пустым">
         </div>
     </div>
-    <div id="step4" class="step">
-        <h1>Подтверждение</h1>
+    <div id="step5" class="step">
+        <h1>Шаг 5: Подтверждение</h1>
         <div id="summary-content">
             <p>Продавец: <span id="summary-seller-id"></span></p>
             <p>Категория: <span id="summary-category"></span></p>
@@ -192,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         steps: {
             1: document.getElementById('step1'), 2: document.getElementById('step2'),
             3: document.getElementById('step3'), 4: document.getElementById('step4'),
-            progress: document.getElementById('step-progress')
+            5: document.getElementById('step5'), progress: document.getElementById('step-progress')
         },
         inputs: {
             sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'),
@@ -220,18 +203,17 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const updateMainButton = () => {
-        const isVisible = true, buttonText = 'Далее', skipText = 'Пропустить';
+        const buttonText = 'Далее', skipText = 'Пропустить', startText = 'Запустить';
         let isEnabled = false;
 
         switch(state.currentStep) {
-            case 1: isEnabled = ui.inputs.sellerId.value.trim(); break;
-            case 2: isEnabled = state.category && state.subcategory; break;
-            case 3: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
-            case 4: isEnabled = true; webApp.MainButton.setText('Запустить'); break;
+            case 1: isEnabled = ui.inputs.sellerId.value.trim(); webApp.MainButton.setText(buttonText); break;
+            case 2: isEnabled = state.category; webApp.MainButton.setText(buttonText); break;
+            case 3: isEnabled = state.subcategory; webApp.MainButton.setText(buttonText); break;
+            case 4: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
+            case 5: isEnabled = true; webApp.MainButton.setText(startText); break;
             default: webApp.MainButton.hide(); return;
         }
-
-        if (state.currentStep !== 3) webApp.MainButton.setText(buttonText);
 
         webApp.MainButton.show();
         isEnabled ? webApp.MainButton.enable().setParams({ color: 'var(--tg-theme-button-color)' }) : webApp.MainButton.disable().setParams({ color: '#a8a8a8' });
@@ -240,16 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.onEvent('mainButtonClicked', () => {
         switch(state.currentStep) {
             case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
-            case 2: goToStep(3); break;
-            case 3: 
+            case 2: renderList(ui.lists.subcategory, Object.keys(state.categoriesData[state.category]), 'subcategory'); goToStep(3); break;
+            case 3: goToStep(4); break;
+            case 4: 
                 state.brandId = ui.inputs.brandId.value.trim();
                 ui.summary.sellerId.textContent = state.sellerId;
                 ui.summary.category.textContent = state.category;
                 ui.summary.subcategory.textContent = state.subcategory;
                 ui.summary.brandId.textContent = state.brandId || 'Все бренды';
-                goToStep(4);
+                goToStep(5);
                 break;
-            case 4: startParsing(); break;
+            case 5: startParsing(); break;
         }
     });
 
@@ -270,10 +253,10 @@ document.addEventListener('DOMContentLoaded', function() {
         items.filter(i => i.toLowerCase().includes(filter.toLowerCase())).forEach(item => {
             let isDisabled = false, title = '';
             if (type === 'category') {
-                isDisabled = Object.keys(state.categoriesData[item]).length === 0;
+                isDisabled = Object.keys(state.categoriesData[item] || {}).length === 0;
                 title = 'Нет подкатегорий';
             } else if (type === 'subcategory') {
-                const cols = state.categoriesData[state.category][item];
+                const cols = state.categoriesData[state.category]?.[item];
                 isDisabled = !Array.isArray(cols) || cols.length === 0;
                 title = 'Нет столбцов для парсинга';
             }
@@ -294,11 +277,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectItem = (type, value) => {
         if (type === 'category') {
             state.category = value; state.subcategory = null;
-            renderList(ui.lists.subcategory, Object.keys(state.categoriesData[value]), 'subcategory');
         } else {
             state.subcategory = value;
         }
-        [...ui.lists[type].children].forEach(c => c.classList.toggle('selected', c.dataset.id === value));
+        document.querySelectorAll(`#${type}-list .list-item`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
         updateMainButton();
     };
 
@@ -319,13 +301,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const es = new EventSource(`/stream?${params.toString()}`);
         const resetUI = () => {
             webApp.MainButton.setText('Начать заново').show().enable();
-            webApp.onEvent('mainButtonClicked', () => window.location.reload());
+            webApp.MainButton.onClick(() => window.location.reload());
             webApp.BackButton.hide();
         }
 
         es.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            [ui.progress.bar, ui.progress.text, ui.progress.log].forEach(el => el.classList.remove('hidden'));
+            [ui.progress.bar.parentElement, ui.progress.text, ui.progress.log].forEach(el => el.classList.remove('hidden'));
 
             switch(data.type) {
                 case 'start': ui.progress.header.textContent = `Найдено: ${data.total} товаров`; ui.progress.log.textContent = data.message; break;
