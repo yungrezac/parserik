@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -20,6 +19,10 @@
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
             --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
             --tariff-free: #8e8e93; --tariff-pro: #5856d6; --tariff-ultima: #ff9500;
+            
+            /* Новые переменные для кнопок */
+            --button-active: var(--tg-button, #007aff);
+            --button-inactive: #9e9e9e;
         }
 
         body {
@@ -176,9 +179,17 @@ document.addEventListener('DOMContentLoaded', function() {
             default: webApp.MainButton.hide(); return;
         }
         webApp.MainButton.setText(text);
-        isEnabled 
-            ? webApp.MainButton.enable().setParams({ color: webApp.themeParams.button_color || '#007AFF' })
-            : webApp.MainButton.disable().setParams({ color: '#9E9E9E' });
+        if (isEnabled) {
+            // Активная кнопка - синяя
+            webApp.MainButton.enable().setParams({ 
+                color: webApp.themeParams.button_color || '#007AFF' 
+            });
+        } else {
+            // Неактивная кнопка - серая
+            webApp.MainButton.disable().setParams({ 
+                color: '#9E9E9E' 
+            });
+        }
     };
 
     webApp.onEvent('mainButtonClicked', () => {
