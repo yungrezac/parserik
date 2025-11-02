@@ -12,7 +12,7 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, NamedStyle
 from flask import Flask, render_template, request, send_from_directory, Response, stream_with_context, jsonify
 
-# --- Инициализация Flask ---
+# --- Инициализация Flask -- -
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
 
@@ -127,8 +127,10 @@ def stream_parser(seller_id, brand_id, columns):
     count = 0
     for page_num in range(1, pages_count + 1):
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}"
-        try: products = make_request(url_list, headers=headers).json().get('products', [])
-        except Exception: continue
+        try: 
+            products = make_request(url_list, headers=headers).json().get('data', {}).get('products', [])
+        except Exception: 
+            continue
         for item in products:
             count += 1
             yield {'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')}
@@ -140,7 +142,8 @@ def stream_parser(seller_id, brand_id, columns):
                 try:
                     adv_res = make_request(urlItem, headers, timeout=2)
                     item['advanced'] = adv_res.json()
-                except Exception: pass
+                except Exception: 
+                    pass
             all_products.append(item)
             time.sleep(random.uniform(0.05, 0.15))
         time.sleep(random.uniform(0.5, 1.0))
@@ -167,7 +170,8 @@ def get_mediabasket_route_map():
     try:
         r = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers)
         return r.json().get('recommend', {}).get('mediabasket_route_map', [{}])[0].get('hosts', [])
-    except: return []
+    except: 
+        return []
 
 def get_host_by_range(val, route_map):
     if not isinstance(route_map, list): return ''
@@ -204,7 +208,7 @@ def create_excel_file(data, columns):
     downloads_dir = 'downloads'
     os.makedirs(downloads_dir, exist_ok=True)
     
-    filename = f"wb_parse_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
+    filename = f"result_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
     output_path = os.path.join(downloads_dir, filename)
     
     wb = Workbook()
