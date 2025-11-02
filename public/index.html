@@ -176,7 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
             default: webApp.MainButton.hide(); return;
         }
         webApp.MainButton.setText(text);
-        isEnabled ? webApp.MainButton.enable().setParams({ color: 'var(--tg-theme-button-color)' }) : webApp.MainButton.disable().setParams({ color: '#a8a8a8' });
+        isEnabled 
+            ? webApp.MainButton.enable().setParams({ color: webApp.themeParams.button_color || '#007AFF' })
+            : webApp.MainButton.disable().setParams({ color: '#9E9E9E' });
     };
 
     webApp.onEvent('mainButtonClicked', () => {
@@ -279,8 +281,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const es = new EventSource(`/stream?${params.toString()}`);
         const onFinish = (isError=false) => {
-            webApp.MainButton.setText('Начать заново').show().enable();
-            webApp.MainButton.onClick(() => window.location.reload());
+            const mainButton = webApp.MainButton;
+            mainButton.setText('Начать заново');
+            mainButton.onClick(() => window.location.reload());
+            mainButton.setParams({ color: webApp.themeParams.button_color || '#007AFF' });
+            mainButton.show();
+            mainButton.enable();
             webApp.BackButton.hide();
         };
         es.onmessage = e => {
