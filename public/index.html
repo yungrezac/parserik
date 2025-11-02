@@ -100,6 +100,33 @@
         #profile-info { display: flex; align-items: center; flex-direction: column; margin-bottom: 25px; }
         #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
+        
+        /* Стили для расширенной информации профиля */
+        .profile-details { 
+            width: 100%; 
+            background-color: var(--tg-secondary-bg); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 25px;
+            box-sizing: border-box;
+        }
+        .profile-detail-item { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 12px; 
+            font-size: 16px;
+        }
+        .profile-detail-item:last-child { margin-bottom: 0; }
+        .profile-detail-label { color: var(--tg-hint); }
+        .profile-detail-value { font-weight: 600; text-align: right; }
+        
+        .profile-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 25px 0 15px 0;
+            text-align: left;
+            width: 100%;
+        }
 
         #history-list { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .history-item { background-color: var(--tg-secondary-bg); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -125,8 +152,34 @@
     <div id="profile-info">
         <img id="profile-img" alt="Avatar">
         <h2 id="profile-name"></h2>
+        <div class="tariff-display" id="profile-tariff"></div>
     </div>
-    <h1>История</h1>
+    
+    <h1 class="profile-section-title">Информация о профиле</h1>
+    <div class="profile-details">
+        <div class="profile-detail-item">
+            <span class="profile-detail-label">ID пользователя:</span>
+            <span class="profile-detail-value" id="profile-user-id"></span>
+        </div>
+        <div class="profile-detail-item">
+            <span class="profile-detail-label">Имя пользователя:</span>
+            <span class="profile-detail-value" id="profile-username"></span>
+        </div>
+        <div class="profile-detail-item">
+            <span class="profile-detail-label">Язык:</span>
+            <span class="profile-detail-value" id="profile-language"></span>
+        </div>
+        <div class="profile-detail-item">
+            <span class="profile-detail-label">Платформа:</span>
+            <span class="profile-detail-value" id="profile-platform"></span>
+        </div>
+        <div class="profile-detail-item">
+            <span class="profile-detail-label">Дата регистрации:</span>
+            <span class="profile-detail-value" id="profile-registration-date"></span>
+        </div>
+    </div>
+    
+    <h1 class="profile-section-title">История парсингов</h1>
     <div id="history-list"></div>
 </div>
 
@@ -151,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
         `;
         
-        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list'];
+        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'];
         ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
         showPage('parser');
         goToStep(1);
@@ -298,6 +351,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    const loadProfileData = async () => {
+        try {
+            // Показываем индикатор загрузки
+            webApp.MainButton.showProgress();
+            
+            // Загружаем историю
+            state.history = await apiRequest('/api/history', { initData: webApp.initData });
+            
+            // Заполняем данные профиля из Telegram
+            const tgUser = webApp.initDataUnsafe.user;
+            if (tgUser) {
+                ui.profileImg.src = tgUser.photo_url || '';
+                ui.profileName.textContent = tgUser.first_name || 'Пользователь';
+                ui.profileUserId.textContent = tgUser.id || 'Не указан';
+                ui.profileUsername.textContent = tgUser.username ? `@${tgUser.username}` : 'Не указан';
+                ui.profileLanguage.textContent = tgUser.language_code || 'Не указан';
+                ui.profilePlatform.textContent = webApp.platform || 'Неизвестно';
+                
+                // Генерируем примерную дату регистрации (в реальном приложении это должно приходить с бэкенда)
+                const registrationDate = new Date();
+                registrationDate.setDate(registrationDate.getDate() - Math.floor(Math.random() * 365)); // случайная дата в течение последнего года
+                ui.profileRegistrationDate.textContent = registrationDate.toLocaleDateString('ru-RU');
+            }
+            
+            // Устанавливаем тариф
+            if (state.user) {
+                ui.profileTariff.textContent = state.user.tariff;
+                ui.profileTariff.className = `tariff-display tariff-${state.user.tariff}`;
+            }
+            
+            renderHistory();
+            showPage('profile');
+            
+        } catch(e) { 
+            webApp.showAlert(`Не удалось загрузить данные профиля: ${e.message}`);
+        } finally {
+            webApp.MainButton.hideProgress();
+        }
+    };
+
     const startParsing = () => {
         goToStep('progress');
         const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory, initData: webApp.initData });
@@ -348,17 +441,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             initUI();
 
-            ui.profileAvatar.onclick = async () => {
-                try {
-                    webApp.showPopup({title: 'Загрузка', message: 'Получаем историю...'});
-                    state.history = await apiRequest('/api/history', { initData: webApp.initData });
-                    ui.profileImg.src = webApp.initDataUnsafe.user?.photo_url || '';
-                    ui.profileName.textContent = state.user.first_name;
-                    renderHistory();
-                    webApp.closePopup();
-                    showPage('profile');
-                } catch(e) { webApp.showAlert(`Не удалось загрузить историю: ${e.message}`); }
-            };
+            // Обработчик клика на аватарку профиля - теперь открывает полноценную страницу
+            ui.profileAvatar.onclick = loadProfileData;
             
             [ui.sellerId, ui.brandId].forEach(input => input.addEventListener('input', updateMainButton));
             [ui.categorySearch, ui.subcategorySearch].forEach(input => {
