@@ -3,260 +3,455 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>WB Parser</title>
+    <!-- Telegram Web App script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1, h2 { color: #5a3a96; text-align: center; }
-        .input-group, .selection-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; }
-        input[type="text"], input[type="search"] { width: calc(100% - 22px); padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
-        button { background-color: #7d5ab8; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; display: block; width: 100%; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        button:hover:not(:disabled) { background-color: #5a3a96; }
-        .columns-container { display: flex; gap: 20px; }
-        .category-column, .subcategory-column { width: 50%; }
+        :root {
+            --tg-bg: var(--tg-theme-bg-color, #ffffff);
+            --tg-text: var(--tg-theme-text-color, #000000);
+            --tg-hint: var(--tg-theme-hint-color, #999999);
+            --tg-link: var(--tg-theme-link-color, #2481cc);
+            --tg-button: var(--tg-theme-button-color, #5288c1);
+            --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f3f3f3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--tg-bg);
+            color: var(--tg-text);
+            margin: 0;
+            padding: 15px;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        .container {
+            height: calc(100vh - 30px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .step {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .step.active {
+            display: flex;
+        }
+
+        h1, h2 {
+            color: var(--tg-text);
+            text-align: center;
+            border-bottom: 1px solid var(--tg-secondary-bg);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        h2 { font-size: 1.2em; margin-bottom: 15px; }
+
+        .input-group { margin-bottom: 20px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"], input[type="search"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--tg-secondary-bg);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--tg-secondary-bg);
+            color: var(--tg-text);
+            box-sizing: border-box;
+        }
+        input::placeholder { color: var(--tg-hint); }
+        
+        .columns-container {
+            display: flex;
+            gap: 15px;
+            flex-grow: 1;
+            min-height: 0; /* Important for flexbox shrinking */
+        }
+
+        .category-column, .subcategory-column {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
         .search-box { margin-bottom: 10px; }
-        .list-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px; }
-        .list-item { padding: 8px 12px; cursor: pointer; border-radius: 4px; margin: 2px 0; }
-        .list-item:hover { background-color: #f0e6ff; }
-        .list-item.selected { background-color: #7d5ab8; color: white; }
-        .list-item.disabled { color: #aaa; cursor: not-allowed; font-style: italic; }
-        .progress-container { margin-top: 20px; }
-        #progress-bar-container { background-color: #e0e0e0; border-radius: 4px; overflow: hidden; height: 25px; }
-        #progress-bar { width: 0%; height: 100%; background-color: #7d5ab8; transition: width 0.2s; }
-        #progress-text, #log-text { text-align: center; margin-top: 8px; font-size: 14px; color: #555; }
-        #download-link-container { margin-top: 20px; text-align: center; }
-        #download-link { display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; }
+
+        .list-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--tg-secondary-bg);
+            border-radius: 8px;
+        }
+
+        .list-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--tg-secondary-bg);
+            font-size: 15px;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:hover { background-color: color-mix(in srgb, var(--tg-secondary-bg) 70%, transparent); }
+        .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); }
+        .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; font-style: italic; }
+
+        #summary-content {
+            background: var(--tg-secondary-bg);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        #summary-content p { margin: 0 0 10px; }
+        #summary-content span { font-weight: bold; color: var(--tg-link); }
+
+        .progress-container { text-align: center; }
+        #progress-bar-container { background-color: var(--tg-secondary-bg); border-radius: 4px; overflow: hidden; height: 10px; margin: 20px 0; }
+        #progress-bar { width: 0%; height: 100%; background-color: var(--tg-link); transition: width 0.2s; }
+        #log-text, #progress-text { font-size: 14px; color: var(--tg-hint); }
+        #download-link {
+            display: inline-block;
+            background-color: var(--tg-button); color: var(--tg-button-text);
+            padding: 12px 25px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: bold;
+        }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>WB Parser</h1>
-
-    <!-- Step 1: Input Seller and Brand IDs -->
-    <div class="input-group">
-        <label for="seller-id">ID Продавца</label>
-        <input type="text" id="seller-id" placeholder="Введите ID продавца">
+    <!-- Шаг 1: Ввод ID -->
+    <div id="step1" class="step active">
+        <h1>Шаг 1: Ввод данных</h1>
+        <div class="input-group">
+            <label for="seller-id">ID Продавца</label>
+            <input type="text" id="seller-id" placeholder="Например: 51365">
+        </div>
+        <div class="input-group">
+            <label for="brand-id">ID Бренда</label>
+            <input type="text" id="brand-id" placeholder="Например: 19573">
+        </div>
     </div>
-    <div class="input-group">
-        <label for="brand-id">ID Бренда</label>
-        <input type="text" id="brand-id" placeholder="Введите ID бренда">
-    </div>
 
-    <!-- Step 2: Select Category and Subcategory -->
-    <div class="selection-group">
-        <h2>Выбор категории</h2>
+    <!-- Шаг 2: Выбор категории -->
+    <div id="step2" class="step">
+        <h1>Шаг 2: Выбор категории</h1>
         <div class="columns-container">
             <div class="category-column">
-                <label for="category-search">Поиск категории</label>
-                <input type="search" id="category-search" class="search-box" placeholder="Начните вводить для поиска...">
+                <input type="search" id="category-search" class="search-box" placeholder="Поиск категории...">
                 <div id="category-list" class="list-box"></div>
             </div>
             <div class="subcategory-column">
-                <label for="subcategory-search">Поиск подкатегории</label>
-                <input type="search" id="subcategory-search" class="search-box" placeholder="Начните вводить для поиска...">
+                <input type="search" id="subcategory-search" class="search-box" placeholder="Поиск подкатегории...">
                 <div id="subcategory-list" class="list-box"></div>
             </div>
         </div>
     </div>
 
-    <!-- Step 3: Parse Button -->
-    <button id="parse-btn" disabled>Запустить парсинг</button>
-
-    <!-- Progress and Result -->
-    <div id="progress-container" class="progress-container hidden">
-        <div id="progress-bar-container">
-            <div id="progress-bar"></div>
+    <!-- Шаг 3: Подтверждение -->
+    <div id="step3" class="step">
+        <h1>Шаг 3: Проверка данных</h1>
+        <div id="summary-content">
+            <p>ID Продавца: <span id="summary-seller-id"></span></p>
+            <p>ID Бренда: <span id="summary-brand-id"></span></p>
+            <p>Категория: <span id="summary-category"></span></p>
+            <p>Подкатегория: <span id="summary-subcategory"></span></p>
         </div>
-        <div id="progress-text"></div>
-        <div id="log-text"></div>
-        <div id="download-link-container" class="hidden">
-            <a id="download-link" href="#" download>Скачать результат</a>
+    </div>
+
+    <!-- Шаг 4: Прогресс -->
+    <div id="step-progress" class="step">
+        <h1>Выполнение</h1>
+        <div class="progress-container">
+            <h2 id="progress-header">Идет парсинг...</h2>
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="progress-text">0 / 0</div>
+            <div id="log-text">Инициализация...</div>
+            <a id="download-link" class="hidden" href="#" download></a>
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const webApp = window.Telegram.WebApp;
+    webApp.ready();
+    webApp.expand();
+
     // --- DOM Elements ---
+    const steps = {
+        1: document.getElementById('step1'),
+        2: document.getElementById('step2'),
+        3: document.getElementById('step3'),
+        progress: document.getElementById('step-progress')
+    };
     const sellerIdInput = document.getElementById('seller-id');
     const brandIdInput = document.getElementById('brand-id');
     const categorySearch = document.getElementById('category-search');
     const subcategorySearch = document.getElementById('subcategory-search');
     const categoryList = document.getElementById('category-list');
     const subcategoryList = document.getElementById('subcategory-list');
-    const parseBtn = document.getElementById('parse-btn');
-    const progressContainer = document.getElementById('progress-container');
+    const summary = {
+        sellerId: document.getElementById('summary-seller-id'),
+        brandId: document.getElementById('summary-brand-id'),
+        category: document.getElementById('summary-category'),
+        subcategory: document.getElementById('summary-subcategory')
+    };
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
     const logText = document.getElementById('log-text');
-    const downloadLinkContainer = document.getElementById('download-link-container');
     const downloadLink = document.getElementById('download-link');
+    const progressHeader = document.getElementById('progress-header');
 
     // --- State ---
+    let currentStep = 1;
     let categoriesData = {};
     let selectedCategory = null;
     let selectedSubcategory = null;
 
     // --- Functions ---
+    const goToStep = (stepNumber) => {
+        if (!steps[stepNumber]) return;
+
+        Object.values(steps).forEach(s => s.classList.remove('active'));
+        steps[stepNumber].classList.add('active');
+        currentStep = stepNumber;
+
+        updateMainButton();
+
+        if (stepNumber > 1 && stepNumber !== 'progress') {
+            webApp.BackButton.show();
+        } else {
+            webApp.BackButton.hide();
+        }
+    };
+
+    const updateMainButton = () => {
+        let isVisible = false;
+        let isEnabled = false;
+        let buttonText = 'Далее';
+
+        switch(currentStep) {
+            case 1:
+                isVisible = true;
+                isEnabled = sellerIdInput.value.trim() && brandIdInput.value.trim();
+                break;
+            case 2:
+                isVisible = true;
+                isEnabled = selectedCategory && selectedSubcategory;
+                break;
+            case 3:
+                isVisible = true;
+                isEnabled = true;
+                buttonText = 'Запустить парсинг';
+                break;
+            case 'progress':
+                isVisible = false;
+                break;
+        }
+
+        if (isVisible) {
+            webApp.MainButton.setText(buttonText);
+            webApp.MainButton.show();
+            if (isEnabled) {
+                webApp.MainButton.enable();
+                webApp.MainButton.setParams({ color: 'var(--tg-theme-button-color)' });
+            } else {
+                webApp.MainButton.disable();
+                webApp.MainButton.setParams({ color: '#cccccc' }); // A generic disabled color
+            }
+        } else {
+            webApp.MainButton.hide();
+        }
+    };
+    
+    webApp.onEvent('mainButtonClicked', () => {
+        if (currentStep === 1) {
+            goToStep(2);
+        } else if (currentStep === 2) {
+            summary.sellerId.textContent = sellerIdInput.value.trim();
+            summary.brandId.textContent = brandIdInput.value.trim();
+            summary.category.textContent = selectedCategory;
+            summary.subcategory.textContent = selectedSubcategory;
+            goToStep(3);
+        } else if (currentStep === 3) {
+            startParsing();
+        }
+    });
+
+    webApp.onEvent('backButtonClicked', () => {
+        if (currentStep === 2) {
+            goToStep(1);
+        } else if (currentStep === 3) {
+            goToStep(2);
+        }
+    });
+
+    [sellerIdInput, brandIdInput].forEach(el => el.addEventListener('input', updateMainButton));
+
+    // Category logic
     const fetchCategories = async () => {
         try {
             const response = await fetch('/categories');
-            if (!response.ok) throw new Error('Network response was not ok');
             categoriesData = await response.json();
             renderCategories();
         } catch (error) {
-            console.error("Ошибка при загрузке категорий:", error);
-            categoryList.innerHTML = '<p style="color: red;">Не удалось загрузить категории.</p>';
+            logText.textContent = `Ошибка загрузки категорий: ${error.message}`;
         }
     };
 
     const renderCategories = (filter = '') => {
         categoryList.innerHTML = '';
-        const filteredKeys = Object.keys(categoriesData).filter(cat => cat.toLowerCase().includes(filter.toLowerCase()));
-        
-        filteredKeys.forEach(cat => {
-            const hasSubcategories = Object.keys(categoriesData[cat]).length > 0;
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            item.textContent = cat;
-            if (!hasSubcategories) {
-                item.classList.add('disabled');
-                item.title = 'В этой категории нет подкатегорий';
-            } else {
-                item.onclick = () => selectCategory(cat);
-            }
-            categoryList.appendChild(item);
-        });
+        Object.keys(categoriesData)
+            .filter(cat => cat.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(cat => {
+                const hasSubcategories = Object.keys(categoriesData[cat]).length > 0;
+                const item = createListItem(cat, !hasSubcategories, 'Нет подкатегорий');
+                if (hasSubcategories) {
+                    item.onclick = () => selectCategory(cat);
+                }
+                categoryList.appendChild(item);
+            });
     };
 
     const selectCategory = (category) => {
         selectedCategory = category;
         selectedSubcategory = null;
-        
-        // Update UI for category list
         document.querySelectorAll('#category-list .list-item').forEach(item => {
-            item.classList.toggle('selected', item.textContent === category);
+            item.classList.toggle('selected', item.dataset.id === category);
         });
-
         renderSubcategories();
-        updateParseButtonState();
+        updateMainButton();
     };
 
     const renderSubcategories = (filter = '') => {
         subcategoryList.innerHTML = '';
-        if (!selectedCategory || !categoriesData[selectedCategory]) return;
-
+        if (!selectedCategory) return;
         const subcategories = categoriesData[selectedCategory];
-        const filteredKeys = Object.keys(subcategories).filter(sub => sub.toLowerCase().includes(filter.toLowerCase()));
-
-        filteredKeys.forEach(sub => {
-            const hasColumns = Array.isArray(subcategories[sub]) && subcategories[sub].length > 0;
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            item.textContent = sub;
-            if (!hasColumns) {
-                item.classList.add('disabled');
-                item.title = 'Для этой подкатегории не заданы столбцы для парсинга';
-            } else {
-                item.onclick = () => selectSubcategory(sub);
-            }
-            subcategoryList.appendChild(item);
-        });
+        Object.keys(subcategories)
+            .filter(sub => sub.toLowerCase().includes(filter.toLowerCase()))
+            .forEach(sub => {
+                const hasColumns = Array.isArray(subcategories[sub]) && subcategories[sub].length > 0;
+                const item = createListItem(sub, !hasColumns, 'Нет столбцов для парсинга');
+                if (hasColumns) {
+                    item.onclick = () => selectSubcategory(sub);
+                }
+                subcategoryList.appendChild(item);
+            });
     };
 
     const selectSubcategory = (subcategory) => {
         selectedSubcategory = subcategory;
-        
-        // Update UI for subcategory list
         document.querySelectorAll('#subcategory-list .list-item').forEach(item => {
-            item.classList.toggle('selected', item.textContent === subcategory);
+            item.classList.toggle('selected', item.dataset.id === subcategory);
         });
-        
-        updateParseButtonState();
+        updateMainButton();
     };
 
-    const updateParseButtonState = () => {
-        const sellerId = sellerIdInput.value.trim();
-        const brandId = brandIdInput.value.trim();
-        parseBtn.disabled = !(sellerId && brandId && selectedCategory && selectedSubcategory);
-    };
-
-    const startParsing = () => {
-        const sellerId = sellerIdInput.value.trim();
-        const brandId = brandIdInput.value.trim();
-        const category = selectedCategory;
-        const subcategory = selectedSubcategory;
-
-        if (!sellerId || !brandId || !category || !subcategory) {
-            alert("Пожалуйста, заполните все поля и выберите категорию/подкатегорию.");
-            return;
+    const createListItem = (text, isDisabled, title) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.textContent = text;
+        item.dataset.id = text;
+        if (isDisabled) {
+            item.classList.add('disabled');
+            item.title = title;
         }
+        return item;
+    };
+    
+    categorySearch.addEventListener('input', () => renderCategories(categorySearch.value));
+    subcategorySearch.addEventListener('input', () => renderSubcategories(subcategorySearch.value));
 
+    // Parsing logic
+    const startParsing = () => {
+        goToStep('progress');
+        
         // Reset UI
-        parseBtn.disabled = true;
-        progressContainer.classList.remove('hidden');
-        downloadLinkContainer.classList.add('hidden');
         progressBar.style.width = '0%';
         progressText.textContent = '';
         logText.textContent = 'Инициализация...';
+        downloadLink.classList.add('hidden');
+        progressHeader.textContent = 'Идет парсинг...';
+        logText.style.color = 'var(--tg-hint)';
 
-        const url = `/stream?seller_id=${encodeURIComponent(sellerId)}&brand_id=${encodeURIComponent(brandId)}&category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
-        const eventSource = new EventSource(url);
+        const params = new URLSearchParams({
+            seller_id: sellerIdInput.value.trim(),
+            brand_id: brandIdInput.value.trim(),
+            category: selectedCategory,
+            subcategory: selectedSubcategory
+        });
+        const eventSource = new EventSource(`/stream?${params.toString()}`);
 
         eventSource.onmessage = function(event) {
             const data = JSON.parse(event.data);
-            
             switch(data.type) {
                 case 'start':
                     logText.textContent = data.message;
                     break;
                 case 'progress':
-                    const percentage = (data.current / data.total) * 100;
+                    const percentage = Math.round((data.current / data.total) * 100);
                     progressBar.style.width = percentage + '%';
-                    progressText.textContent = `${data.current} / ${data.total} - ${data.message}`;
+                    progressText.textContent = `${data.current} / ${data.total}`;
+                    logText.textContent = data.message;
                     break;
                 case 'log':
                     logText.textContent = data.message;
                     break;
                 case 'result':
-                    logText.textContent = "Парсинг завершен!";
+                    webApp.BackButton.hide();
+                    progressHeader.textContent = "Парсинг завершен!";
+                    logText.textContent = 'Файл готов к скачиванию.';
                     progressBar.style.width = '100%';
                     downloadLink.href = `/download/${data.download_filename}`;
-                    downloadLink.textContent = `Скачать ${data.download_filename}`;
-                    downloadLinkContainer.classList.remove('hidden');
+                    downloadLink.textContent = `Скачать ${data.download_filename.split('_').slice(0,2).join('_')}.xlsx`;
+                    downloadLink.classList.remove('hidden');
                     eventSource.close();
-                    parseBtn.disabled = false;
+                    
+                    webApp.MainButton.setText('Начать заново');
+                    webApp.MainButton.show();
+                    webApp.MainButton.enable();
+                    webApp.onEvent('mainButtonClicked', () => window.location.reload());
                     break;
                 case 'error':
-                    logText.textContent = `Ошибка: ${data.message}`;
-                    logText.style.color = 'red';
+                    progressHeader.textContent = 'Ошибка';
+                    logText.textContent = data.message;
+                    logText.style.color = 'var(--tg-theme-destructive-text-color, #ff0000)';
                     eventSource.close();
-                    parseBtn.disabled = false;
+                    
+                    webApp.MainButton.setText('Попробовать снова');
+                    webApp.MainButton.show();
+                    web-App.MainButton.enable();
+                    webApp.onEvent('mainButtonClicked', () => goToStep(1));
                     break;
             }
         };
 
         eventSource.onerror = function() {
-            logText.textContent = 'Ошибка соединения с сервером.';
-            logText.style.color = 'red';
+            progressHeader.textContent = 'Ошибка';
+            logText.textContent = 'Потеряно соединение с сервером.';
+            logText.style.color = 'var(--tg-theme-destructive-text-color, #ff0000)';
             eventSource.close();
-            parseBtn.disabled = false;
+            webApp.BackButton.show();
         };
     };
 
-    // --- Event Listeners ---
-    [sellerIdInput, brandIdInput].forEach(input => input.addEventListener('input', updateParseButtonState));
-    categorySearch.addEventListener('input', () => renderCategories(categorySearch.value));
-    subcategorySearch.addEventListener('input', () => renderSubcategories(subcategorySearch.value));
-    parseBtn.addEventListener('click', startParsing);
-
     // --- Initial Load ---
     fetchCategories();
+    updateMainButton();
 });
 </script>
 
