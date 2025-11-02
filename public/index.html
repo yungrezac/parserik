@@ -3,19 +3,23 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WB Parser</title>
-    <!-- Telegram Web App script -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-bg: var(--tg-theme-bg-color, #ffffff);
             --tg-text: var(--tg-theme-text-color, #000000);
-            --tg-hint: var(--tg-theme-hint-color, #999999);
-            --tg-link: var(--tg-theme-link-color, #2481cc);
-            --tg-button: var(--tg-theme-button-color, #5288c1);
+            --tg-hint: var(--tg-theme-hint-color, #9e9e9e);
+            --tg-link: var(--tg-theme-link-color, #007aff);
+            --tg-button: var(--tg-theme-button-color, #007aff);
             --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
-            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f3f3f3);
+            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
+
+            --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
+            --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+            --button-hover-shadow: 0 6px 20px rgba(0, 122, 255, 0.5);
         }
 
         body {
@@ -23,165 +27,156 @@
             background-color: var(--tg-bg);
             color: var(--tg-text);
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
             overflow: hidden;
         }
 
         .container {
-            height: calc(100vh - 30px);
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
+            transition: transform 0.3s ease-in-out;
         }
         
         .step {
             display: none;
             flex-direction: column;
-            height: 100%;
+            flex-grow: 1;
+            animation: fadeIn 0.4s ease-in-out;
         }
 
         .step.active {
             display: flex;
         }
 
-        h1, h2 {
-            color: var(--tg-text);
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
             text-align: center;
-            border-bottom: 1px solid var(--tg-secondary-bg);
-            padding-bottom: 10px;
             margin-top: 0;
+            margin-bottom: 25px;
         }
         
-        h2 { font-size: 1.2em; margin-bottom: 15px; }
-
-        .input-group { margin-bottom: 20px; }
+        .input-group { margin-bottom: 25px; }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         input[type="text"], input[type="search"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid var(--tg-secondary-bg);
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 14px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            font-size: 17px;
             background-color: var(--tg-secondary-bg);
             color: var(--tg-text);
             box-sizing: border-box;
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
         input::placeholder { color: var(--tg-hint); }
-        
-        .columns-container {
-            display: flex;
-            gap: 15px;
-            flex-grow: 1;
-            min-height: 0; /* Important for flexbox shrinking */
-        }
+        input:focus { outline: none; background-color: color-mix(in srgb, var(--tg-secondary-bg) 85%, transparent); box-shadow: 0 0 0 2px var(--tg-link); }
 
-        .category-column, .subcategory-column {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .search-box { margin-bottom: 10px; }
-
+        .columns-container { display: flex; gap: 15px; flex-grow: 1; min-height: 0; }
+        .category-column, .subcategory-column { width: 50%; display: flex; flex-direction: column; }
         .list-box {
             flex-grow: 1;
             overflow-y: auto;
             border: 1px solid var(--tg-secondary-bg);
-            border-radius: 8px;
+            border-radius: 10px;
+            background-color: var(--tg-secondary-bg);
         }
-
         .list-item {
-            padding: 10px 14px;
+            padding: 12px 16px;
             cursor: pointer;
-            border-bottom: 1px solid var(--tg-secondary-bg);
-            font-size: 15px;
+            border-bottom: 1px solid color-mix(in srgb, var(--tg-secondary-bg) 50%, transparent);
+            font-size: 16px;
+            transition: background-color 0.2s;
         }
         .list-item:last-child { border-bottom: none; }
-        .list-item:hover { background-color: color-mix(in srgb, var(--tg-secondary-bg) 70%, transparent); }
-        .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); }
-        .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; font-style: italic; }
+        .list-item:hover { background-color: color-mix(in srgb, var(--tg-bg) 80%, var(--tg-link)); }
+        .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); font-weight: 600; }
+        .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; }
 
-        #summary-content {
-            background: var(--tg-secondary-bg);
-            padding: 15px;
-            border-radius: 8px;
-        }
-        #summary-content p { margin: 0 0 10px; }
-        #summary-content span { font-weight: bold; color: var(--tg-link); }
+        #summary-content { background: var(--tg-secondary-bg); padding: 20px; border-radius: 12px; }
+        #summary-content p { margin: 0 0 12px; font-size: 16px; }
+        #summary-content p:last-child { margin-bottom: 0; }
+        #summary-content span { font-weight: 600; color: var(--tg-text); float: right; }
 
-        .progress-container { text-align: center; }
-        #progress-bar-container { background-color: var(--tg-secondary-bg); border-radius: 4px; overflow: hidden; height: 10px; margin: 20px 0; }
-        #progress-bar { width: 0%; height: 100%; background-color: var(--tg-link); transition: width 0.2s; }
-        #log-text, #progress-text { font-size: 14px; color: var(--tg-hint); }
-        #download-link {
+        #step-progress { text-align: center; justify-content: center; }
+        #progress-header { font-size: 22px; margin-bottom: 15px; }
+        #progress-bar-container { background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0; }
+        #progress-bar { width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px; }
+        #log-text, #progress-text { font-size: 15px; color: var(--tg-hint); }
+        #download-button {
             display: inline-block;
-            background-color: var(--tg-button); color: var(--tg-button-text);
-            padding: 12px 25px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: bold;
+            background-image: var(--button-gradient);
+            color: var(--tg-button-text);
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-top: 30px;
+            font-weight: 600;
+            font-size: 17px;
+            border: none;
+            box-shadow: var(--button-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .hidden { display: none; }
+        #download-button:hover { transform: translateY(-2px); box-shadow: var(--button-hover-shadow); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Шаг 1: Ввод ID -->
-    <div id="step1" class="step active">
-        <h1>Шаг 1: Ввод данных</h1>
-        <div class="input-group">
-            <label for="seller-id">ID Продавца</label>
-            <input type="text" id="seller-id" placeholder="Например: 51365">
-        </div>
-        <div class="input-group">
-            <label for="brand-id">ID Бренда</label>
-            <input type="text" id="brand-id" placeholder="Например: 19573">
+    <div id="step1" class="step active"> 
+        <h1>ID Продавца</h1>
+        <div class="input-group"> 
+            <input type="text" id="seller-id" placeholder="Введите ID продавца"> 
         </div>
     </div>
-
-    <!-- Шаг 2: Выбор категории -->
     <div id="step2" class="step">
-        <h1>Шаг 2: Выбор категории</h1>
+        <h1>Категория</h1>
         <div class="columns-container">
             <div class="category-column">
-                <input type="search" id="category-search" class="search-box" placeholder="Поиск категории...">
+                <input type="search" id="category-search" class="search-box" placeholder="Поиск...">
                 <div id="category-list" class="list-box"></div>
             </div>
             <div class="subcategory-column">
-                <input type="search" id="subcategory-search" class="search-box" placeholder="Поиск подкатегории...">
+                <input type="search" id="subcategory-search" class="search-box" placeholder="Поиск...">
                 <div id="subcategory-list" class="list-box"></div>
             </div>
         </div>
     </div>
-
-    <!-- Шаг 3: Подтверждение -->
     <div id="step3" class="step">
-        <h1>Шаг 3: Проверка данных</h1>
-        <div id="summary-content">
-            <p>ID Продавца: <span id="summary-seller-id"></span></p>
-            <p>ID Бренда: <span id="summary-brand-id"></span></p>
-            <p>Категория: <span id="summary-category"></span></p>
-            <p>Подкатегория: <span id="summary-subcategory"></span></p>
+        <h1>ID Бренда (опционально)</h1>
+        <div class="input-group">
+            <input type="text" id="brand-id" placeholder="Можно оставить пустым">
         </div>
     </div>
-
-    <!-- Шаг 4: Прогресс -->
-    <div id="step-progress" class="step">
-        <h1>Выполнение</h1>
-        <div class="progress-container">
-            <h2 id="progress-header">Идет парсинг...</h2>
-            <div id="progress-bar-container">
-                <div id="progress-bar"></div>
-            </div>
-            <div id="progress-text">0 / 0</div>
-            <div id="log-text">Инициализация...</div>
-            <a id="download-link" class="hidden" href="#" download></a>
+    <div id="step4" class="step">
+        <h1>Подтверждение</h1>
+        <div id="summary-content">
+            <p>Продавец: <span id="summary-seller-id"></span></p>
+            <p>Категория: <span id="summary-category"></span></p>
+            <p>Подкатегория: <span id="summary-subcategory"></span></p>
+            <p>Бренд: <span id="summary-brand-id"></span></p>
         </div>
+    </div>
+    <div id="step-progress" class="step">
+        <h1 id="progress-header"></h1>
+        <div id="progress-bar-container"><div id="progress-bar"></div></div>
+        <p id="progress-text"></p>
+        <p id="log-text"></p>
+        <button id="download-button" class="hidden"></button>
     </div>
 </div>
 
@@ -191,265 +186,178 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    // --- DOM Elements ---
-    const steps = {
-        1: document.getElementById('step1'),
-        2: document.getElementById('step2'),
-        3: document.getElementById('step3'),
-        progress: document.getElementById('step-progress')
-    };
-    const sellerIdInput = document.getElementById('seller-id');
-    const brandIdInput = document.getElementById('brand-id');
-    const categorySearch = document.getElementById('category-search');
-    const subcategorySearch = document.getElementById('subcategory-search');
-    const categoryList = document.getElementById('category-list');
-    const subcategoryList = document.getElementById('subcategory-list');
-    const summary = {
-        sellerId: document.getElementById('summary-seller-id'),
-        brandId: document.getElementById('summary-brand-id'),
-        category: document.getElementById('summary-category'),
-        subcategory: document.getElementById('summary-subcategory')
-    };
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    const logText = document.getElementById('log-text');
-    const downloadLink = document.getElementById('download-link');
-    const progressHeader = document.getElementById('progress-header');
-
-    // --- State ---
-    let currentStep = 1;
-    let categoriesData = {};
-    let selectedCategory = null;
-    let selectedSubcategory = null;
-
-    // --- Functions ---
-    const goToStep = (stepNumber) => {
-        if (!steps[stepNumber]) return;
-
-        Object.values(steps).forEach(s => s.classList.remove('active'));
-        steps[stepNumber].classList.add('active');
-        currentStep = stepNumber;
-
-        updateMainButton();
-
-        if (stepNumber > 1 && stepNumber !== 'progress') {
-            webApp.BackButton.show();
-        } else {
-            webApp.BackButton.hide();
+    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '' };
+    
+    const ui = {
+        steps: {
+            1: document.getElementById('step1'), 2: document.getElementById('step2'),
+            3: document.getElementById('step3'), 4: document.getElementById('step4'),
+            progress: document.getElementById('step-progress')
+        },
+        inputs: {
+            sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'),
+            categorySearch: document.getElementById('category-search'), subcategorySearch: document.getElementById('subcategory-search')
+        },
+        lists: { category: document.getElementById('category-list'), subcategory: document.getElementById('subcategory-list') },
+        summary: {
+            sellerId: document.getElementById('summary-seller-id'), brandId: document.getElementById('summary-brand-id'),
+            category: document.getElementById('summary-category'), subcategory: document.getElementById('summary-subcategory')
+        },
+        progress: {
+            header: document.getElementById('progress-header'), bar: document.getElementById('progress-bar'),
+            text: document.getElementById('progress-text'), log: document.getElementById('log-text'),
+            downloadBtn: document.getElementById('download-button')
         }
+    };
+
+    const goToStep = (step) => {
+        if (!ui.steps[step]) return;
+        state.currentStep = step;
+        Object.values(ui.steps).forEach(s => s.classList.remove('active'));
+        ui.steps[step].classList.add('active');
+        updateMainButton();
+        step > 1 && step !== 'progress' ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
-        let isVisible = false;
+        const isVisible = true, buttonText = 'Далее', skipText = 'Пропустить';
         let isEnabled = false;
-        let buttonText = 'Далее';
 
-        switch(currentStep) {
-            case 1:
-                isVisible = true;
-                isEnabled = sellerIdInput.value.trim() && brandIdInput.value.trim();
-                break;
-            case 2:
-                isVisible = true;
-                isEnabled = selectedCategory && selectedSubcategory;
-                break;
-            case 3:
-                isVisible = true;
-                isEnabled = true;
-                buttonText = 'Запустить парсинг';
-                break;
-            case 'progress':
-                isVisible = false;
-                break;
+        switch(state.currentStep) {
+            case 1: isEnabled = ui.inputs.sellerId.value.trim(); break;
+            case 2: isEnabled = state.category && state.subcategory; break;
+            case 3: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
+            case 4: isEnabled = true; webApp.MainButton.setText('Запустить'); break;
+            default: webApp.MainButton.hide(); return;
         }
 
-        if (isVisible) {
-            webApp.MainButton.setText(buttonText);
-            webApp.MainButton.show();
-            if (isEnabled) {
-                webApp.MainButton.enable();
-                webApp.MainButton.setParams({ color: 'var(--tg-theme-button-color)' });
-            } else {
-                webApp.MainButton.disable();
-                webApp.MainButton.setParams({ color: '#cccccc' }); // A generic disabled color
-            }
-        } else {
-            webApp.MainButton.hide();
-        }
+        if (state.currentStep !== 3) webApp.MainButton.setText(buttonText);
+
+        webApp.MainButton.show();
+        isEnabled ? webApp.MainButton.enable().setParams({ color: 'var(--tg-theme-button-color)' }) : webApp.MainButton.disable().setParams({ color: '#a8a8a8' });
     };
-    
+
     webApp.onEvent('mainButtonClicked', () => {
-        if (currentStep === 1) {
-            goToStep(2);
-        } else if (currentStep === 2) {
-            summary.sellerId.textContent = sellerIdInput.value.trim();
-            summary.brandId.textContent = brandIdInput.value.trim();
-            summary.category.textContent = selectedCategory;
-            summary.subcategory.textContent = selectedSubcategory;
-            goToStep(3);
-        } else if (currentStep === 3) {
-            startParsing();
+        switch(state.currentStep) {
+            case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
+            case 2: goToStep(3); break;
+            case 3: 
+                state.brandId = ui.inputs.brandId.value.trim();
+                ui.summary.sellerId.textContent = state.sellerId;
+                ui.summary.category.textContent = state.category;
+                ui.summary.subcategory.textContent = state.subcategory;
+                ui.summary.brandId.textContent = state.brandId || 'Все бренды';
+                goToStep(4);
+                break;
+            case 4: startParsing(); break;
         }
     });
 
-    webApp.onEvent('backButtonClicked', () => {
-        if (currentStep === 2) {
-            goToStep(1);
-        } else if (currentStep === 3) {
-            goToStep(2);
-        }
-    });
+    webApp.onEvent('backButtonClicked', () => goToStep(state.currentStep - 1));
 
-    [sellerIdInput, brandIdInput].forEach(el => el.addEventListener('input', updateMainButton));
+    Object.values(ui.inputs).forEach(el => el.addEventListener('input', updateMainButton));
 
-    // Category logic
     const fetchCategories = async () => {
         try {
             const response = await fetch('/categories');
-            categoriesData = await response.json();
-            renderCategories();
-        } catch (error) {
-            logText.textContent = `Ошибка загрузки категорий: ${error.message}`;
-        }
+            state.categoriesData = await response.json();
+            renderList(ui.lists.category, Object.keys(state.categoriesData), 'category');
+        } catch (e) { console.error("Ошибка загрузки категорий"); }
     };
 
-    const renderCategories = (filter = '') => {
-        categoryList.innerHTML = '';
-        Object.keys(categoriesData)
-            .filter(cat => cat.toLowerCase().includes(filter.toLowerCase()))
-            .forEach(cat => {
-                const hasSubcategories = Object.keys(categoriesData[cat]).length > 0;
-                const item = createListItem(cat, !hasSubcategories, 'Нет подкатегорий');
-                if (hasSubcategories) {
-                    item.onclick = () => selectCategory(cat);
-                }
-                categoryList.appendChild(item);
-            });
-    };
-
-    const selectCategory = (category) => {
-        selectedCategory = category;
-        selectedSubcategory = null;
-        document.querySelectorAll('#category-list .list-item').forEach(item => {
-            item.classList.toggle('selected', item.dataset.id === category);
+    const renderList = (element, items, type, filter = '') => {
+        element.innerHTML = '';
+        items.filter(i => i.toLowerCase().includes(filter.toLowerCase())).forEach(item => {
+            let isDisabled = false, title = '';
+            if (type === 'category') {
+                isDisabled = Object.keys(state.categoriesData[item]).length === 0;
+                title = 'Нет подкатегорий';
+            } else if (type === 'subcategory') {
+                const cols = state.categoriesData[state.category][item];
+                isDisabled = !Array.isArray(cols) || cols.length === 0;
+                title = 'Нет столбцов для парсинга';
+            }
+            const el = document.createElement('div');
+            el.className = 'list-item';
+            el.textContent = item;
+            el.dataset.id = item;
+            if (isDisabled) {
+                el.classList.add('disabled');
+                el.title = title;
+            } else {
+                el.onclick = () => selectItem(type, item);
+            }
+            element.appendChild(el);
         });
-        renderSubcategories();
+    };
+
+    const selectItem = (type, value) => {
+        if (type === 'category') {
+            state.category = value; state.subcategory = null;
+            renderList(ui.lists.subcategory, Object.keys(state.categoriesData[value]), 'subcategory');
+        } else {
+            state.subcategory = value;
+        }
+        [...ui.lists[type].children].forEach(c => c.classList.toggle('selected', c.dataset.id === value));
         updateMainButton();
     };
 
-    const renderSubcategories = (filter = '') => {
-        subcategoryList.innerHTML = '';
-        if (!selectedCategory) return;
-        const subcategories = categoriesData[selectedCategory];
-        Object.keys(subcategories)
-            .filter(sub => sub.toLowerCase().includes(filter.toLowerCase()))
-            .forEach(sub => {
-                const hasColumns = Array.isArray(subcategories[sub]) && subcategories[sub].length > 0;
-                const item = createListItem(sub, !hasColumns, 'Нет столбцов для парсинга');
-                if (hasColumns) {
-                    item.onclick = () => selectSubcategory(sub);
-                }
-                subcategoryList.appendChild(item);
-            });
-    };
+    ui.inputs.categorySearch.addEventListener('input', (e) => renderList(ui.lists.category, Object.keys(state.categoriesData), 'category', e.target.value));
+    ui.inputs.subcategorySearch.addEventListener('input', (e) => {
+        if (!state.category) return;
+        renderList(ui.lists.subcategory, Object.keys(state.categoriesData[state.category]), 'subcategory', e.target.value);
+    });
 
-    const selectSubcategory = (subcategory) => {
-        selectedSubcategory = subcategory;
-        document.querySelectorAll('#subcategory-list .list-item').forEach(item => {
-            item.classList.toggle('selected', item.dataset.id === subcategory);
-        });
-        updateMainButton();
-    };
-
-    const createListItem = (text, isDisabled, title) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.textContent = text;
-        item.dataset.id = text;
-        if (isDisabled) {
-            item.classList.add('disabled');
-            item.title = title;
-        }
-        return item;
-    };
-    
-    categorySearch.addEventListener('input', () => renderCategories(categorySearch.value));
-    subcategorySearch.addEventListener('input', () => renderSubcategories(subcategorySearch.value));
-
-    // Parsing logic
     const startParsing = () => {
         goToStep('progress');
+        Object.values(ui.progress).forEach(el => el.classList.add('hidden'));
+        ui.progress.header.classList.remove('hidden');
         
-        // Reset UI
-        progressBar.style.width = '0%';
-        progressText.textContent = '';
-        logText.textContent = 'Инициализация...';
-        downloadLink.classList.add('hidden');
-        progressHeader.textContent = 'Идет парсинг...';
-        logText.style.color = 'var(--tg-hint)';
+        const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory });
+        if (state.brandId) params.append('brand_id', state.brandId);
 
-        const params = new URLSearchParams({
-            seller_id: sellerIdInput.value.trim(),
-            brand_id: brandIdInput.value.trim(),
-            category: selectedCategory,
-            subcategory: selectedSubcategory
-        });
-        const eventSource = new EventSource(`/stream?${params.toString()}`);
+        const es = new EventSource(`/stream?${params.toString()}`);
+        const resetUI = () => {
+            webApp.MainButton.setText('Начать заново').show().enable();
+            webApp.onEvent('mainButtonClicked', () => window.location.reload());
+            webApp.BackButton.hide();
+        }
 
-        eventSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
+        es.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            [ui.progress.bar, ui.progress.text, ui.progress.log].forEach(el => el.classList.remove('hidden'));
+
             switch(data.type) {
-                case 'start':
-                    logText.textContent = data.message;
-                    break;
+                case 'start': ui.progress.header.textContent = `Найдено: ${data.total} товаров`; ui.progress.log.textContent = data.message; break;
                 case 'progress':
-                    const percentage = Math.round((data.current / data.total) * 100);
-                    progressBar.style.width = percentage + '%';
-                    progressText.textContent = `${data.current} / ${data.total}`;
-                    logText.textContent = data.message;
+                    ui.progress.bar.style.width = `${(data.current / data.total) * 100}%`;
+                    ui.progress.text.textContent = `${data.current} / ${data.total}`;
+                    ui.progress.log.textContent = data.message;
                     break;
-                case 'log':
-                    logText.textContent = data.message;
-                    break;
+                case 'log': ui.progress.log.textContent = data.message; break;
                 case 'result':
-                    webApp.BackButton.hide();
-                    progressHeader.textContent = "Парсинг завершен!";
-                    logText.textContent = 'Файл готов к скачиванию.';
-                    progressBar.style.width = '100%';
-                    downloadLink.href = `/download/${data.download_filename}`;
-                    downloadLink.textContent = `Скачать ${data.download_filename.split('_').slice(0,2).join('_')}.xlsx`;
-                    downloadLink.classList.remove('hidden');
-                    eventSource.close();
-                    
-                    webApp.MainButton.setText('Начать заново');
-                    webApp.MainButton.show();
-                    webApp.MainButton.enable();
-                    webApp.onEvent('mainButtonClicked', () => window.location.reload());
+                    ui.progress.header.textContent = 'Готово!';
+                    ui.progress.log.textContent = 'Файл успешно создан.';
+                    ui.progress.downloadBtn.classList.remove('hidden');
+                    ui.progress.downloadBtn.textContent = `Скачать Excel`;
+                    ui.progress.downloadBtn.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
+                    es.close(); resetUI();
                     break;
                 case 'error':
-                    progressHeader.textContent = 'Ошибка';
-                    logText.textContent = data.message;
-                    logText.style.color = 'var(--tg-theme-destructive-text-color, #ff0000)';
-                    eventSource.close();
-                    
-                    webApp.MainButton.setText('Попробовать снова');
-                    webApp.MainButton.show();
-                    web-App.MainButton.enable();
-                    webApp.onEvent('mainButtonClicked', () => goToStep(1));
+                    ui.progress.header.textContent = 'Ошибка';
+                    ui.progress.log.textContent = data.message;
+                    ui.progress.log.style.color = 'var(--tg-destructive)';
+                    es.close(); resetUI();
                     break;
             }
         };
-
-        eventSource.onerror = function() {
-            progressHeader.textContent = 'Ошибка';
-            logText.textContent = 'Потеряно соединение с сервером.';
-            logText.style.color = 'var(--tg-theme-destructive-text-color, #ff0000)';
-            eventSource.close();
-            webApp.BackButton.show();
+        es.onerror = () => { 
+            ui.progress.header.textContent = 'Ошибка сети';
+            ui.progress.log.textContent = 'Потеряно соединение с сервером.';
+            es.close(); resetUI();
         };
     };
 
-    // --- Initial Load ---
     fetchCategories();
     updateMainButton();
 });
