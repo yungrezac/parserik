@@ -1,3 +1,4 @@
+
 import re
 import os
 import json
@@ -10,11 +11,9 @@ import requests
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, NamedStyle
 from flask import Flask, render_template, request, send_from_directory, Response, stream_with_context, jsonify
-from flask_cors import CORS
 
 # --- Инициализация Flask ---
 app = Flask(__name__, static_folder='public', template_folder='public')
-CORS(app)
 port = int(os.environ.get('PORT', 5000))
 
 DB_FILE = 'database.json'
@@ -68,30 +67,24 @@ def get_or_create_user(user_data):
 # --- API маршруты ---
 @app.route('/api/me', methods=['POST'])
 def get_me():
-    try:
-        init_data = request.json.get('initData')
-        user_data, is_valid = is_valid_telegram_data(init_data)
-        if not is_valid:
-            return jsonify({"error": "Invalid initData"}), 403
-        user_profile = get_or_create_user(user_data)
-        return jsonify(user_profile)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    init_data = request.json.get('initData')
+    user_data, is_valid = is_valid_telegram_data(init_data)
+    if not is_valid:
+        return jsonify({"error": "Invalid initData"}), 403
+    user_profile = get_or_create_user(user_data)
+    return jsonify(user_profile)
 
 @app.route('/api/history', methods=['POST'])
 def get_history():
-    try:
-        init_data = request.json.get('initData')
-        user_data, is_valid = is_valid_telegram_data(init_data)
-        if not is_valid:
-            return jsonify({"error": "Invalid initData"}), 403
-        user_id = str(user_data['id'])
-        db = load_db()
-        user_history = [p for p in db['parses'] if p['user_id'] == user_id]
-        user_history.sort(key=lambda x: x['timestamp'], reverse=True)
-        return jsonify(user_history)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    init_data = request.json.get('initData')
+    user_data, is_valid = is_valid_telegram_data(init_data)
+    if not is_valid:
+        return jsonify({"error": "Invalid initData"}), 403
+    user_id = str(user_data['id'])
+    db = load_db()
+    user_history = [p for p in db['parses'] if p['user_id'] == user_id]
+    user_history.sort(key=lambda x: x['timestamp'], reverse=True)
+    return jsonify(user_history)
 
 # --- Основные маршруты ---
 @app.route('/')
@@ -103,8 +96,7 @@ def get_categories():
     try:
         with open('subcategories.json', 'r', encoding='utf-8') as f:
             return jsonify(json.load(f))
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error loading categories: {e}")
+    except (FileNotFoundError, json.JSONDecodeError):
         return jsonify({"error": "Файл subcategories.json не найден или поврежден."}), 500
 
 @app.route('/stream')
@@ -121,11 +113,7 @@ def stream_run():
         try:
             with open('subcategories.json', 'r', encoding='utf-8') as f:
                 categories_data = json.load(f)
-            
-            category = args.get('category')
-            subcategory = args.get('subcategory')
-            
-            columns = categories_data.get(category, {}).get(subcategory)
+            columns = categories_data.get(args.get('category'), {}).get(args.get('subcategory'))
             if not columns:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
@@ -135,106 +123,68 @@ def stream_run():
                     db = load_db()
                     user_id = str(user_data['id'])
                     new_parse = {
-                        'id': len(db['parses']) + 1, 
-                        'user_id': user_id, 
-                        'seller_id': args.get('seller_id'),
-                        'brand_id': args.get('brand_id'), 
-                        'category': category, 
-                        'subcategory': subcategory,
-                        'filename': update['download_filename'], 
-                        'timestamp': datetime.datetime.utcnow().isoformat()
+                        'id': len(db['parses']) + 1, 'user_id': user_id, 'seller_id': args.get('seller_id'),
+                        'brand_id': args.get('brand_id'), 'category': args.get('category'), 'subcategory': args.get('subcategory'),
+                        'filename': update['download_filename'], 'timestamp': datetime.datetime.utcnow().isoformat()
                     }
                     db['parses'].append(new_parse)
                     save_db(db)
                 yield f"data: {json.dumps(update)}\n\n"
         except Exception as e:
-            print(f"Stream error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'message': f'Критическая ошибка: {str(e)}'})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Критическая ошибка: {e}'})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
     directory = os.path.join(os.getcwd(), 'downloads')
-    try:
-        return send_from_directory(directory, filename, as_attachment=True)
-    except FileNotFoundError:
-        return "File not found", 404
+    return send_from_directory(directory, filename, as_attachment=True)
 
-# --- ЛОГИКА ПАРСИНГА ---
+# --- ЛОГИКА ПАРСИНГА (без изменений) ---
 headers = {
-    'Accept': '*/*', 
-    'Accept-Language': 'ru-RU,ru;q=0.9', 
-    'Connection': 'keep-alive', 
-    'Origin': 'https://www.wildberries.ru', 
-    'Referer': 'https://www.wildberries.ru/', 
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru', 
+    'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 }
 
 def stream_parser(seller_id, brand_id, columns):
     all_products = []
     yield {'type': 'log', 'message': 'Получение карты маршрутов WB...'}
-    
+    baskets = get_mediabasket_route_map()
+    brand_query = f"&fbrand={brand_id}" if brand_id else ""
+    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}&lang=ru&spp=30"
     try:
-        baskets = get_mediabasket_route_map()
-        brand_query = f"&fbrand={brand_id}" if brand_id else ""
-        url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}&lang=ru&spp=30"
-        
         res_total = make_request(url_total_list, headers=headers).json()
         products_total = res_total.get('data', {}).get('total', 0)
-        
-        if not products_total: 
-            yield {'type': 'error', 'message': "Товары не найдены."}
-            return
-            
     except Exception as e:
-        yield {'type': 'error', 'message': f"Ошибка при получении числа товаров: {e}"}
-        return
-        
+        raise Exception(f"Ошибка при получении числа товаров: {e}")
+    if not products_total: raise Exception("Товары не найдены.")
     pages_count = math.ceil(products_total / 100)
     yield {'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}.'}
-    
     count = 0
     for page_num in range(1, pages_count + 1):
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}"
-        try: 
-            response = make_request(url_list, headers=headers)
-            products = response.json().get('products', [])
-        except Exception as e:
-            yield {'type': 'log', 'message': f'Ошибка при загрузке страницы {page_num}: {e}'}
-            continue
-            
+        try: products = make_request(url_list, headers=headers).json().get('products', [])
+        except Exception: continue
         for item in products:
             count += 1
             yield {'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')}
-            
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             item['advanced'] = {}
-            
             if backetName: 
                 urlItem = f"https://{backetName}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 try:
                     adv_res = make_request(urlItem, headers, timeout=2)
                     item['advanced'] = adv_res.json()
-                except Exception as e:
-                    pass
-                    
+                except Exception: pass
             all_products.append(item)
             time.sleep(random.uniform(0.05, 0.15))
-            
         time.sleep(random.uniform(0.5, 1.0))
-        
     yield {'type': 'log', 'message': 'Формирование таблицы...'}
     mapped_data = map_data(all_products, columns)
-    
     yield {'type': 'log', 'message': 'Создание Excel-файла...'}
     output_path = create_excel_file(mapped_data, columns)
-    
-    if not output_path: 
-        yield {'type': 'error', 'message': "Не удалось создать Excel-файл."}
-        return
-        
+    if not output_path: raise Exception("Не удалось создать Excel-файл.")
     download_filename = os.path.basename(output_path)
     yield {'type': 'result', 'download_filename': download_filename}
 
@@ -245,98 +195,61 @@ def make_request(url, headers, timeout=10, retries=3, backoff_factor=0.3):
             response.raise_for_status()
             return response
         except requests.exceptions.RequestException as e:
-            if i == retries - 1: 
-                raise e
+            if i == retries - 1: raise e
             time.sleep(backoff_factor * (2 ** i))
 
 def get_mediabasket_route_map():
     try: 
         r = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers)
         return r.json().get('recommend', {}).get('mediabasket_route_map', [{}])[0].get('hosts', [])
-    except Exception as e:
-        print(f"Error getting route map: {e}")
-        return []
+    except: return []
 
 def get_host_by_range(val, route_map):
-    if not isinstance(route_map, list): 
-        return ''
+    if not isinstance(route_map, list): return ''
     for host in route_map: 
-        if host.get('vol_range_from') <= val <= host.get('vol_range_to'): 
-            return host.get('host')
+        if host.get('vol_range_from') <= val <= host.get('vol_range_to'): return host.get('host')
     return ''
 
 def map_data(data, columns):
     master_mapping = {
-        'Артикул продавца': lambda i, a: i.get('vendorCode', ''), 
-        'Бренд': lambda i, a: i.get('brand', ''),
-        'Наименование': lambda i, a: i.get('name', ''), 
-        'Описание': lambda i, a: a.get('description', ''),
+        'Артикул продавца': lambda i, a: i.get('vendorCode', ''), 'Бренд': lambda i, a: i.get('brand', ''),
+        'Наименование': lambda i, a: i.get('name', ''), 'Описание': lambda i, a: a.get('description', ''),
         'Состав': lambda i, a: find_value_in_options(a.get('options', []), 'Состав'),
         'Страна производства': lambda i, a: find_value_in_options(a.get('options', []), 'Страна производства'),
         'Комплектация': lambda i, a: find_value_in_options(a.get('options', []), 'Комплектация'),
         'ТНВЭД': lambda i, a: find_value_in_options(a.get('options', []), 'ТН ВЭД'),
     }
-    
     new_data = []
     for item in data:
         adv = item.get('advanced', {})
-        row_data = {}
-        for col in columns:
-            if col in master_mapping:
-                row_data[col] = master_mapping[col](item, adv)
-            else:
-                row_data[col] = find_value_in_options(adv.get('options', []), col)
+        row_data = {col: master_mapping.get(col, lambda i, a: find_value_in_options(a.get('options', []), col))(item, adv) for col in columns}
         new_data.append(row_data)
-        
     return new_data
 
 def find_value_in_options(options, name):
-    if not isinstance(options, list): 
-        return ''
+    if not isinstance(options, list): return ''
     for opt in options: 
-        if isinstance(opt, dict) and opt.get('name') == name: 
-            return opt.get('value', '')
+        if isinstance(opt, dict) and opt.get('name') == name: return opt.get('value')
     return ''
 
 def create_excel_file(data, columns):
-    if not data: 
-        return None
-        
+    if not data: return None
     os.makedirs("downloads", exist_ok=True)
     filename = f"wb_parse_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
     output_path = os.path.join("downloads", filename)
-    
-    try:
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Результаты"
-        
-        header_style = NamedStyle(
-            name="header_style", 
-            fill=PatternFill(start_color="6A5ACD", end_color="6A5ACD", fill_type="solid"), 
-            font=Font(name='Arial', size=11, bold=True, color="FFFFFF"), 
-            alignment=Alignment(horizontal='center', vertical='center')
-        )
-        wb.add_named_style(header_style)
-        
-        ws.append(columns)
-        for cell in ws[1]: 
-            cell.style = header_style
-            
-        for row_data in data: 
-            ws.append([row_data.get(header, '') for header in columns])
-            
-        for col in ws.columns:
-            max_length = max((len(str(cell.value)) for cell in col if cell.value), default=0)
-            adjusted_width = (max_length + 3) if max_length < 50 else 50
-            ws.column_dimensions[col[0].column_letter].width = adjusted_width
-            
-        wb.save(output_path)
-        return output_path
-        
-    except Exception as e:
-        print(f"Error creating Excel file: {e}")
-        return None
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Результаты"
+    header_style = NamedStyle(name="header_style", fill=PatternFill(start_color="6A5ACD", end_color="6A5ACD", fill_type="solid"), font=Font(name='Arial', size=11, bold=True, color="FFFFFF"), alignment=Alignment(horizontal='center', vertical='center'))
+    wb.add_named_style(header_style)
+    ws.append(columns)
+    for cell in ws[1]: cell.style = header_style
+    for row_data in data: ws.append([row_data.get(header, '') for header in columns])
+    for col in ws.columns:
+        max_length = max((len(str(cell.value)) for cell in col if cell.value), default=0)
+        ws.column_dimensions[col[0].column_letter].width = (max_length + 3) if max_length < 50 else 50
+    wb.save(output_path)
+    return output_path
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=True)
