@@ -101,7 +101,6 @@
         #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
         
-        /* Стили для расширенной информации профиля */
         .profile-details { 
             width: 100%; 
             background-color: var(--tg-secondary-bg); 
@@ -128,7 +127,6 @@
             width: 100%;
         }
 
-        /* Тариф в правом верхнем углу на странице профиля */
         .profile-tariff-display {
             position: absolute;
             right: 0;
@@ -158,11 +156,9 @@
 </div>
 
 <div id="parser-page" class="page">
-    <!-- Steps will be injected here by JS -->
 </div>
 
 <div id="profile-page" class="page">
-    <!-- Тариф в правом верхнем углу -->
     <div class="profile-tariff-display" id="profile-tariff"></div>
     
     <div id="profile-info">
@@ -179,14 +175,6 @@
         <div class="profile-detail-item">
             <span class="profile-detail-label">Имя пользователя:</span>
             <span class="profile-detail-value" id="profile-username"></span>
-        </div>
-        <div class="profile-detail-item">
-            <span class="profile-detail-label">Язык:</span>
-            <span class="profile-detail-value" id="profile-language"></span>
-        </div>
-        <div class="profile-detail-item">
-            <span class="profile-detail-label">Платформа:</span>
-            <span class="profile-detail-value" id="profile-platform"></span>
         </div>
         <div class="profile-detail-item">
             <span class="profile-detail-label">Дата регистрации:</span>
@@ -219,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
         `;
         
-        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'];
+        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-registration-date'];
         ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
         showPage('parser');
         goToStep(1);
@@ -229,13 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         state.currentPage = page;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         ui[`${page}Page`].classList.add('active');
-
-        if (page === 'profile') {
-            ui.appHeader.classList.add('hidden');
-        } else {
-            ui.appHeader.classList.remove('hidden');
-        }
-
+        ui.appHeader.classList.toggle('hidden', page === 'profile');
         updateMainButton();
         updateBackButton();
     };
@@ -268,9 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             default: webApp.MainButton.hide(); return;
         }
         webApp.MainButton.setText(text);
-        isEnabled 
-            ? webApp.MainButton.enable().setParams({ color: webApp.themeParams.button_color || '#007AFF' })
-            : webApp.MainButton.disable().setParams({ color: '#9E9E9E' });
+        webApp.MainButton.setParams({ is_active: isEnabled, color: isEnabled ? webApp.themeParams.button_color : '#9E9E9E' });
     };
 
     webApp.onEvent('mainButtonClicked', () => {
@@ -289,22 +269,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     webApp.onEvent('backButtonClicked', () => {
-        if (state.currentPage === 'profile') {
-            showPage('parser');
-        } else if (state.currentStep === 2) {
-            state.category = '';
-            goToStep(1);
-        } else if (state.currentStep === 3) {
-            state.subcategory = '';
-            renderList(ui.categoryList, Object.keys(state.categoriesData), 'category'); // Re-render to clear selection
-            goToStep(2);
-        } else if (state.currentStep > 1) {
-            goToStep(state.currentStep - 1);
-        }
+        if (state.currentPage === 'profile') showPage('parser');
+        else if (state.currentStep === 2) { state.category = ''; goToStep(1); }
+        else if (state.currentStep === 3) { state.subcategory = ''; renderList(ui.categoryList, Object.keys(state.categoriesData), 'category'); goToStep(2); }
+        else if (state.currentStep > 1) goToStep(state.currentStep - 1);
     });
 
     const apiRequest = async (endpoint, body) => {
-        const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: webApp.initData, ...body }) });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         return res.json();
     };
@@ -326,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (type === 'subcategory') {
                 const cols = state.categoriesData[state.category]?.[item];
                 isDisabled = !Array.isArray(cols) || cols.length === 0;
-                 if(isDisabled) title = 'Нет столбцов для парсинга';
+                if(isDisabled) title = 'Нет столбцов для парсинга';
             }
             if (isDisabled) { el.classList.add('disabled'); el.title = title; }
             else { el.onclick = () => selectItem(type, item); }
@@ -343,14 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
         else { state.subcategory = value; }
         renderList(ui[`${type}List`], Object.keys(type === 'category' ? state.categoriesData : state.categoriesData[state.category]), type);
         updateMainButton();
-    };
-    
-    const saveHistory = (item) => {
-        state.history.unshift(item);
-        if (state.history.length > 50) { // Ограничение на 50 записей
-            state.history.pop();
-        }
-        localStorage.setItem('parsingHistory', JSON.stringify(state.history));
     };
 
     const renderHistory = () => {
@@ -376,31 +340,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loadProfileData = async () => {
         try {
-            // Загружаем историю из localStorage
-            const localHistory = localStorage.getItem('parsingHistory');
-            if (localHistory) {
-                state.history = JSON.parse(localHistory);
-            }
+            const [user, history] = await Promise.all([
+                apiRequest('/api/me'),
+                apiRequest('/api/history')
+            ]);
+            state.user = user;
+            state.history = history;
             
-            // Заполняем данные профиля из Telegram
             const tgUser = webApp.initDataUnsafe.user;
             if (tgUser) {
                 ui.profileImg.src = tgUser.photo_url || '';
                 ui.profileName.textContent = tgUser.first_name || 'Пользователь';
-                ui.profileUserId.textContent = tgUser.id || 'Не указан';
-                ui.profileUsername.textContent = tgUser.username ? `@${tgUser.username}` : 'Не указан';
-                ui.profileLanguage.textContent = tgUser.language_code || 'Не указан';
-                ui.profilePlatform.textContent = webApp.platform || 'Неизвестно';
-                
-                const registrationDate = new Date();
-                registrationDate.setDate(registrationDate.getDate() - Math.floor(Math.random() * 365));
-                ui.profileRegistrationDate.textContent = registrationDate.toLocaleDateString('ru-RU');
+                ui.profileUserId.textContent = user.id || 'Не указан';
+                ui.profileUsername.textContent = user.username ? `@${user.username}` : 'Не указан';
             }
-            
-            if (state.user) {
-                ui.profileTariff.textContent = state.user.tariff;
-                ui.profileTariff.className = `profile-tariff-display tariff-${state.user.tariff}`;
-            }
+            ui.profileRegistrationDate.textContent = new Date(user.created_at).toLocaleDateString('ru-RU');
+            ui.profileTariff.textContent = user.tariff;
+            ui.profileTariff.className = `profile-tariff-display tariff-${user.tariff}`;
             
             renderHistory();
             showPage('profile');
@@ -420,12 +376,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const mainButton = webApp.MainButton;
             mainButton.setText('Начать заново');
             mainButton.onClick(() => window.location.reload());
-            mainButton.setParams({ color: webApp.themeParams.button_color || '#007AFF' });
+            mainButton.setParams({ is_active: true, color: webApp.themeParams.button_color || '#007AFF' });
             mainButton.show();
-            mainButton.enable();
             webApp.BackButton.hide();
         };
-        es.onmessage = e => {
+
+        es.onmessage = async e => {
             const data = JSON.parse(e.data);
             if(data.type !== 'log') ui.progressHeader.classList.remove('hidden');
             switch(data.type) {
@@ -438,17 +394,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'result':
                     ui.progressHeader.textContent = 'Готово!';
                     ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
-                    const downloadUrl = `/download/${data.download_filename}`;
+                    const downloadUrl = `/download/${state.user.id}/${data.download_filename}`;
                     ui.downloadButton.classList.remove('hidden');
                     ui.downloadButton.textContent = `Скачать Excel`;
                     ui.downloadButton.onclick = () => webApp.openLink(downloadUrl);
 
-                    // Сохраняем в историю
-                    saveHistory({
+                    const historyItem = {
                         subcategory: state.subcategory,
                         timestamp: new Date().toISOString(),
                         downloadUrl: downloadUrl,
-                    });
+                    };
+                    await apiRequest('/api/history/add', { historyItem });
                     
                     es.close(); 
                     onFinish(); 
@@ -482,13 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            // Загружаем историю при старте
-            const localHistory = localStorage.getItem('parsingHistory');
-            if (localHistory) {
-                state.history = JSON.parse(localHistory);
-            }
-
-            state.user = await apiRequest('/api/me', { initData: webApp.initData });
+            state.user = await apiRequest('/api/me');
             
             ui.tariffDisplay.textContent = state.user.tariff;
             ui.tariffDisplay.className = `tariff-display tariff-${state.user.tariff}`;
