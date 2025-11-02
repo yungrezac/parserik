@@ -17,7 +17,8 @@ import hashlib
 # --- Инициализация Flask ---
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE') # Загружаем токен бота
+# ВАЖНО: Установите этот токен в переменных окружения для продакшена
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE') 
 
 DB_FILE = 'database.json'
 
@@ -37,21 +38,36 @@ def save_db(data):
 
 # --- Аутентификация Telegram ---
 def is_valid_telegram_data(init_data_str):
-    data_check_string = unquote(init_data_str)
-    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
-    
-    params = dict(sorted(x.split('=') for x in data_check_string.split('&') if x.startswith('user=') or x.startswith('auth_date=') or x.startswith('hash=')))
-    if 'hash' not in params:
-        return None, None # Невалидные данные
+    # --- РЕЖИМ РАЗРАБОТКИ ---
+    # Если токен не установлен, включаем небезопасный режим для отладки UI.
+    # ВНИМАНИЕ: Это не должно использоваться в продакшене!
+    if BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
+        print("\033[93mWARNING: Telegram authentication is in INSECURE debug mode. Set BOT_TOKEN for production.\033[0m")
+        try:
+            params = dict(x.split('=', 1) for x in unquote(init_data_str).split('&'))
+            user_data = json.loads(params['user'])
+            return user_data, True
+        except Exception as e:
+            print(f"DEBUG MODE ERROR: Could not parse initData: {e}")
+            return None, False
 
-    hash_val = params.pop('hash')
-    data_for_hash = "\n".join([f'{k}={v}' for k, v in params.items()])
+    # --- Продакшен-проверка --- 
+    try:
+        data_check_string = unquote(init_data_str)
+        secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
+        
+        params = dict(sorted([x.split('=', 1) for x in data_check_string.split('&')]))
 
-    calculated_hash = hmac.new(secret_key, data_for_hash.encode(), hashlib.sha256).hexdigest()
+        hash_val = params.pop('hash')
+        data_for_hash = "\n".join([f'{k}={v}' for k, v in params.items()])
 
-    if calculated_hash == hash_val:
-        user_data = json.loads(unquote(params['user']))
-        return user_data, True
+        calculated_hash = hmac.new(secret_key, data_for_hash.encode(), hashlib.sha256).hexdigest()
+
+        if calculated_hash == hash_val:
+            user_data = json.loads(params['user'])
+            return user_data, True
+    except Exception:
+        return None, False
 
     return None, False
 
@@ -91,10 +107,7 @@ def get_history():
     user_id = str(user_data['id'])
     db = load_db()
     user_history = [p for p in db['parses'] if p['user_id'] == user_id]
-    
-    # Сортируем по дате, от новых к старым
     user_history.sort(key=lambda x: x['timestamp'], reverse=True)
-    
     return jsonify(user_history)
 
 # --- Основные маршруты ---
@@ -112,7 +125,6 @@ def get_categories():
 
 @app.route('/stream')
 def stream_run():
-    # Получаем все параметры, включая initData
     seller_id = request.args.get('seller_id')
     brand_id = request.args.get('brand_id')
     category = request.args.get('category')
@@ -121,7 +133,7 @@ def stream_run():
 
     user_data, is_valid = is_valid_telegram_data(init_data)
     if not is_valid:
-        return Response(json.dumps({"type": "error", "message": "Ошибка аутентификации."}), mimetype='text/event-stream')
+        return Response(json.dumps({'type': 'error', 'message': 'Ошибка аутентификации.'}), mimetype='text/event-stream')
 
     if not all([seller_id, category, subcategory]):
         return Response("Ошибка: не указаны параметры.", status=400)
@@ -135,26 +147,17 @@ def stream_run():
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
 
-            # Запускаем парсер как генератор
             for update in stream_parser(seller_id, brand_id, columns):
-                # Если парсер вернул имя файла, это успешный результат
                 if update.get('type') == 'result':
                     db = load_db()
                     user_id = str(user_data['id'])
-                    
                     new_parse = {
-                        'id': len(db['parses']) + 1,
-                        'user_id': user_id,
-                        'seller_id': seller_id,
-                        'brand_id': brand_id,
-                        'category': category,
-                        'subcategory': subcategory,
-                        'filename': update['download_filename'],
-                        'timestamp': datetime.datetime.utcnow().isoformat()
+                        'id': len(db['parses']) + 1, 'user_id': user_id, 'seller_id': seller_id,
+                        'brand_id': brand_id, 'category': category, 'subcategory': subcategory,
+                        'filename': update['download_filename'], 'timestamp': datetime.datetime.utcnow().isoformat()
                     }
                     db['parses'].append(new_parse)
                     save_db(db)
-                    
                 yield f"data: {json.dumps(update)}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': f'Критическая ошибка: {e}'})}\n\n"
@@ -166,8 +169,7 @@ def download_file(filename):
     directory = os.path.join(os.getcwd(), 'downloads')
     return send_from_directory(directory, filename, as_attachment=True)
 
-
-# --- ЛОГИКА ПАРСИНГА (без изменений, но возвращает dict) ---
+# --- ЛОГИКА ПАРСИНГА (без серьезных изменений) ---
 headers = {
     'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru', 
     'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
@@ -177,58 +179,41 @@ def stream_parser(seller_id, brand_id, columns):
     all_products = []
     yield {'type': 'log', 'message': 'Получение карты маршрутов WB...'}
     baskets = get_mediabasket_route_map()
-
     brand_query = f"&fbrand={brand_id}" if brand_id else ""
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}&lang=ru&spp=30"
-    
     try:
         res_total = make_request(url_total_list, headers=headers).json()
         products_total = res_total.get('data', {}).get('total', 0)
     except Exception as e:
         raise Exception(f"Ошибка при получении числа товаров: {e}")
-
-    if not products_total:
-        raise Exception("Товары не найдены.")
-
+    if not products_total: raise Exception("Товары не найдены.")
     pages_count = math.ceil(products_total / 100)
     yield {'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}.'}
-
     count = 0
     for page_num in range(1, pages_count + 1):
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}"
-        try:
-            products = make_request(url_list, headers=headers).json().get('products', [])
-        except Exception:
-            continue
-
+        try: products = make_request(url_list, headers=headers).json().get('products', [])
+        except Exception: continue
         for item in products:
             count += 1
             yield {'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')}
-            
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
+            item['advanced'] = {}
             if backetName: 
                 urlItem = f"https://{backetName}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 try:
                     adv_res = make_request(urlItem, headers, timeout=2)
                     item['advanced'] = adv_res.json()
-                except Exception:
-                    item['advanced'] = {}
-            else:
-                item['advanced'] = {}
-            
+                except Exception: pass
             all_products.append(item)
             time.sleep(random.uniform(0.05, 0.15))
         time.sleep(random.uniform(0.5, 1.0))
-
     yield {'type': 'log', 'message': 'Формирование таблицы...'}
     mapped_data = map_data(all_products, columns)
-
     yield {'type': 'log', 'message': 'Создание Excel-файла...'}
     output_path = create_excel_file(mapped_data, columns)
-    if not output_path:
-        raise Exception("Не удалось создать Excel-файл.")
-
+    if not output_path: raise Exception("Не удалось создать Excel-файл.")
     download_filename = os.path.basename(output_path)
     yield {'type': 'result', 'download_filename': download_filename}
 
@@ -290,11 +275,10 @@ def create_excel_file(data, columns):
     for cell in ws[1]: cell.style = header_style
     for row_data in data: ws.append([row_data.get(header, '') for header in columns])
     for col in ws.columns:
-        max_length = max(len(str(cell.value)) for cell in col if cell.value) if col else 0
+        max_length = max((len(str(cell.value)) for cell in col if cell.value), default=0)
         ws.column_dimensions[col[0].column_letter].width = (max_length + 3) if max_length < 50 else 50
     wb.save(output_path)
     return output_path
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=True)
-
