@@ -38,7 +38,7 @@
 
         .app-header {
             position: relative;
-            height: 50px; /* Explicit height */
+            height: 50px;
             flex-shrink: 0;
             margin-bottom: 10px;
             transition: opacity 0.3s, transform 0.3s;
@@ -101,7 +101,6 @@
         #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
         
-        /* Стили для расширенной информации профиля */
         .profile-details { 
             width: 100%; 
             background-color: var(--tg-secondary-bg); 
@@ -128,7 +127,6 @@
             width: 100%;
         }
 
-        /* Тариф в правом верхнем углу на странице профиля */
         .profile-tariff-display {
             position: absolute;
             right: 0;
@@ -148,6 +146,76 @@
         .history-download-btn { background: var(--tg-link); color: var(--tg-button-text); padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
         .hidden { display: none; }
+        
+        /* Стили для страницы прогресса */
+        .progress-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .progress-header {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            max-width: 300px;
+            background-color: var(--tg-secondary-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 12px;
+            margin: 25px 0;
+        }
+        
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-image: var(--button-gradient);
+            transition: width 0.3s;
+            border-radius: 8px;
+        }
+        
+        .progress-text {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--tg-text);
+        }
+        
+        .log-text {
+            font-size: 14px;
+            color: var(--tg-hint);
+            min-height: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .download-button {
+            background-image: var(--button-gradient);
+            color: var(--tg-button-text);
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-top: 30px;
+            font-weight: 600;
+            font-size: 17px;
+            border: none;
+            box-shadow: var(--button-shadow);
+            cursor: pointer;
+        }
+        
+        .result-success {
+            color: #34c759;
+        }
+        
+        .result-error {
+            color: var(--tg-destructive);
+        }
     </style>
 </head>
 <body>
@@ -162,7 +230,6 @@
 </div>
 
 <div id="profile-page" class="page">
-    <!-- Тариф в правом верхнем углу -->
     <div class="profile-tariff-display" id="profile-tariff"></div>
     
     <div id="profile-info">
@@ -204,23 +271,71 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentPage: 'parser', currentStep: 1, categoriesData: {}, user: null, history: [],
-                    sellerId: '', brandId: '', category: '', subcategory: '' };
+    const state = { 
+        currentPage: 'parser', 
+        currentStep: 1, 
+        categoriesData: {}, 
+        user: null, 
+        history: [],
+        sellerId: '', 
+        brandId: '', 
+        category: '', 
+        subcategory: '' 
+    };
 
     const ui = {};
+    
     const initUI = () => {
         const parserPage = document.getElementById('parser-page');
         parserPage.innerHTML = `
-            <div id="step1" class="step"> <h1>Шаг 1: ID Продавца</h1> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div>
-            <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск..."> <div id="category-list" class="list-container"></div> </div>
-            <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск..."> <div id="subcategory-list" class="list-container"></div> </div>
-            <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опц.)</h1> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div>
-            <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"></div> </div>
-            <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
+            <div id="step1" class="step">
+                <h1>Шаг 1: ID Продавца</h1>
+                <input type="text" id="seller-id" placeholder="Введите ID продавца">
+            </div>
+            <div id="step2" class="step">
+                <h1>Шаг 2: Категория</h1>
+                <input type="search" id="category-search" placeholder="Поиск...">
+                <div id="category-list" class="list-container"></div>
+            </div>
+            <div id="step3" class="step">
+                <h1>Шаг 3: Подкатегория</h1>
+                <input type="search" id="subcategory-search" placeholder="Поиск...">
+                <div id="subcategory-list" class="list-container"></div>
+            </div>
+            <div id="step4" class="step">
+                <h1>Шаг 4: ID Бренда (опц.)</h1>
+                <input type="text" id="brand-id" placeholder="Можно оставить пустым">
+            </div>
+            <div id="step5" class="step">
+                <h1>Шаг 5: Подтверждение</h1>
+                <div id="summary-content"></div>
+            </div>
+            <div id="step-progress" class="step">
+                <div class="progress-container">
+                    <h1 id="progress-header" class="progress-header"></h1>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                    <p id="progress-text" class="progress-text"></p>
+                    <p id="log-text" class="log-text"></p>
+                    <button id="download-button" class="download-button hidden">Скачать Excel</button>
+                </div>
+            </div>
         `;
         
-        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff', 'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'];
-        ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
+        const ids = [
+            'app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress',
+            'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 
+            'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button',
+            'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list', 'profile-tariff',
+            'profile-user-id', 'profile-username', 'profile-language', 'profile-platform', 'profile-registration-date'
+        ];
+        
+        ids.forEach(id => { 
+            const key = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+            ui[key] = document.getElementById(id); 
+        });
+        
         showPage('parser');
         goToStep(1);
     };
@@ -243,48 +358,92 @@ document.addEventListener('DOMContentLoaded', function() {
     const goToStep = (step) => {
         state.currentStep = step;
         document.querySelectorAll('#parser-page .step').forEach(s => s.classList.remove('active'));
-        if (ui[`step${step}`]) ui[`step${step}`].classList.add('active');
+        if (ui[`step${step}`]) {
+            ui[`step${step}`].classList.add('active');
+        }
         updateMainButton();
         updateBackButton();
     };
 
     const updateBackButton = () => {
-        const shouldShow = state.currentPage === 'profile' || (state.currentPage === 'parser' && state.currentStep > 1 && state.currentStep !== 'progress');
+        const shouldShow = state.currentPage === 'profile' || 
+                          (state.currentPage === 'parser' && state.currentStep > 1 && state.currentStep !== 'progress');
         shouldShow ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
         if (state.currentPage !== 'parser' || state.currentStep === 'progress') {
-            webApp.MainButton.hide(); return;
+            webApp.MainButton.hide(); 
+            return;
         }
+        
         webApp.MainButton.show();
-        let isEnabled = false, text = 'Далее';
+        let isEnabled = false;
+        let text = 'Далее';
+        
         switch(state.currentStep) {
-            case 1: isEnabled = ui.sellerId.value.trim(); break;
-            case 2: isEnabled = !!state.category; break;
-            case 3: isEnabled = !!state.subcategory; break;
-            case 4: isEnabled = true; text = ui.brandId.value.trim() ? 'Далее' : 'Пропустить'; break;
-            case 5: isEnabled = true; text = 'Запустить'; break;
-            default: webApp.MainButton.hide(); return;
+            case 1: 
+                isEnabled = ui.sellerId.value.trim().length > 0; 
+                break;
+            case 2: 
+                isEnabled = !!state.category; 
+                break;
+            case 3: 
+                isEnabled = !!state.subcategory; 
+                break;
+            case 4: 
+                isEnabled = true; 
+                text = ui.brandId.value.trim() ? 'Далее' : 'Пропустить'; 
+                break;
+            case 5: 
+                isEnabled = true; 
+                text = 'Запустить парсинг'; 
+                break;
+            default: 
+                webApp.MainButton.hide(); 
+                return;
         }
+        
         webApp.MainButton.setText(text);
-        isEnabled 
-            ? webApp.MainButton.enable().setParams({ color: webApp.themeParams.button_color || '#007AFF' })
-            : webApp.MainButton.disable().setParams({ color: '#9E9E9E' });
+        if (isEnabled) {
+            webApp.MainButton.enable().setParams({ 
+                color: webApp.themeParams.button_color || '#007AFF' 
+            });
+        } else {
+            webApp.MainButton.disable().setParams({ 
+                color: '#9E9E9E' 
+            });
+        }
     };
 
     webApp.onEvent('mainButtonClicked', () => {
         if (state.currentPage !== 'parser') return;
+        
         switch(state.currentStep) {
-            case 1: state.sellerId = ui.sellerId.value.trim(); goToStep(2); break;
-            case 2: renderList(ui.subcategoryList, Object.keys(state.categoriesData[state.category]), 'subcategory'); goToStep(3); break;
-            case 3: goToStep(4); break;
+            case 1: 
+                state.sellerId = ui.sellerId.value.trim();
+                goToStep(2);
+                break;
+            case 2: 
+                renderList(ui.subcategoryList, Object.keys(state.categoriesData[state.category]), 'subcategory');
+                goToStep(3);
+                break;
+            case 3: 
+                goToStep(4);
+                break;
             case 4: 
                 state.brandId = ui.brandId.value.trim();
-                ui.summaryContent.innerHTML = `<p>Продавец: <span>${state.sellerId}</span></p><p>Категория: <span>${state.category}</span></p><p>Подкатегория: <span>${state.subcategory}</span></p><p>Бренд: <span>${state.brandId || 'Все'}</span></p>`;
+                ui.summaryContent.innerHTML = `
+                    <p>Продавец: <span>${state.sellerId}</span></p>
+                    <p>Категория: <span>${state.category}</span></p>
+                    <p>Подкатегория: <span>${state.subcategory}</span></p>
+                    <p>Бренд: <span>${state.brandId || 'Все'}</span></p>
+                `;
                 goToStep(5);
                 break;
-            case 5: startParsing(); break;
+            case 5: 
+                startParsing();
+                break;
         }
     });
 
@@ -296,15 +455,19 @@ document.addEventListener('DOMContentLoaded', function() {
             goToStep(1);
         } else if (state.currentStep === 3) {
             state.subcategory = '';
-            renderList(ui.categoryList, Object.keys(state.categoriesData), 'category'); // Re-render to clear selection
+            renderList(ui.categoryList, Object.keys(state.categoriesData), 'category');
             goToStep(2);
-        } else if (state.currentStep > 1) {
+        } else if (state.currentStep > 1 && state.currentStep !== 'progress') {
             goToStep(state.currentStep - 1);
         }
     });
 
     const apiRequest = async (endpoint, body) => {
-        const res = await fetch(endpoint, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        const res = await fetch(endpoint, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(body) 
+        });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         return res.json();
     };
@@ -312,42 +475,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const renderList = (element, items, type, filter = '') => {
         element.innerHTML = '';
         const filteredItems = items.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
-        if (filteredItems.length === 0) { element.innerHTML = '<p class="placeholder-text">Ничего не найдено</p>'; return; }
+        
+        if (filteredItems.length === 0) { 
+            element.innerHTML = '<p class="placeholder-text">Ничего не найдено</p>'; 
+            return; 
+        }
 
         filteredItems.forEach(item => {
             const el = document.createElement('div');
             el.className = 'list-item';
             el.textContent = item;
             
-            let isDisabled = false, title = '';
+            let isDisabled = false;
+            let title = '';
+            
             if (type === 'category') {
                 isDisabled = Object.keys(state.categoriesData[item] || {}).length === 0;
-                if(isDisabled) title = 'Нет подкатегорий';
+                if (isDisabled) title = 'Нет подкатегорий';
             } else if (type === 'subcategory') {
                 const cols = state.categoriesData[state.category]?.[item];
                 isDisabled = !Array.isArray(cols) || cols.length === 0;
-                 if(isDisabled) title = 'Нет столбцов для парсинга';
+                if (isDisabled) title = 'Нет столбцов для парсинга';
             }
-            if (isDisabled) { el.classList.add('disabled'); el.title = title; }
-            else { el.onclick = () => selectItem(type, item); }
+            
+            if (isDisabled) { 
+                el.classList.add('disabled'); 
+                el.title = title; 
+            } else { 
+                el.onclick = () => selectItem(type, item); 
+            }
 
-            if ((type === 'category' && state.category === item) || (type === 'subcategory' && state.subcategory === item)) {
+            if ((type === 'category' && state.category === item) || 
+                (type === 'subcategory' && state.subcategory === item)) {
                 el.classList.add('selected');
             }
+            
             element.appendChild(el);
         });
     };
 
     const selectItem = (type, value) => {
-        if (type === 'category') { state.category = value; state.subcategory = ''; }
-        else { state.subcategory = value; }
-        renderList(ui[`${type}List`], Object.keys(type === 'category' ? state.categoriesData : state.categoriesData[state.category]), type);
+        if (type === 'category') { 
+            state.category = value; 
+            state.subcategory = ''; 
+        } else { 
+            state.subcategory = value; 
+        }
+        
+        renderList(
+            ui[`${type}List`], 
+            Object.keys(type === 'category' ? state.categoriesData : state.categoriesData[state.category]), 
+            type
+        );
         updateMainButton();
     };
     
     const saveHistory = (item) => {
         state.history.unshift(item);
-        if (state.history.length > 50) { // Ограничение на 50 записей
+        if (state.history.length > 50) {
             state.history.pop();
         }
         localStorage.setItem('parsingHistory', JSON.stringify(state.history));
@@ -356,10 +541,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const renderHistory = () => {
         ui.historyList.innerHTML = '';
         if (!state.history || state.history.length === 0) {
-            ui.historyList.innerHTML = '<p class="placeholder-text">История парсингов пуста.</p>'; return;
+            ui.historyList.innerHTML = '<p class="placeholder-text">История парсингов пуста.</p>'; 
+            return;
         }
+        
         state.history.forEach(item => {
-            const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+            const date = new Date(item.timestamp).toLocaleString('ru-RU', { 
+                day: 'numeric', 
+                month: 'long', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
             const el = document.createElement('div');
             el.className = 'history-item';
             el.innerHTML = `
@@ -369,6 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <button class="history-download-btn">Скачать</button>
             `;
+            
             el.querySelector('.history-download-btn').onclick = () => webApp.openLink(item.downloadUrl);
             ui.historyList.appendChild(el);
         });
@@ -376,13 +570,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loadProfileData = async () => {
         try {
-            // Загружаем историю из localStorage
             const localHistory = localStorage.getItem('parsingHistory');
             if (localHistory) {
                 state.history = JSON.parse(localHistory);
             }
             
-            // Заполняем данные профиля из Telegram
             const tgUser = webApp.initDataUnsafe.user;
             if (tgUser) {
                 ui.profileImg.src = tgUser.photo_url || '';
@@ -412,77 +604,126 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const startParsing = () => {
         goToStep('progress');
-        const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory, initData: webApp.initData });
+        
+        // Сброс состояния прогресса
+        ui.progressHeader.textContent = 'Начинаем парсинг...';
+        ui.progressBar.style.width = '0%';
+        ui.progressText.textContent = '';
+        ui.logText.textContent = 'Подготовка...';
+        ui.logText.className = 'log-text';
+        ui.downloadButton.classList.add('hidden');
+        
+        const params = new URLSearchParams({ 
+            seller_id: state.sellerId, 
+            category: state.category, 
+            subcategory: state.subcategory, 
+            initData: webApp.initData 
+        });
+        
         if (state.brandId) params.append('brand_id', state.brandId);
 
         const es = new EventSource(`/stream?${params.toString()}`);
-        const onFinish = (isError=false) => {
-            const mainButton = webApp.MainButton;
-            mainButton.setText('Начать заново');
-            mainButton.onClick(() => window.location.reload());
-            mainButton.setParams({ color: webApp.themeParams.button_color || '#007AFF' });
-            mainButton.show();
-            mainButton.enable();
+        
+        const onFinish = (isError = false) => {
+            webApp.MainButton.setText('Начать заново');
+            webApp.MainButton.onClick(() => window.location.reload());
+            webApp.MainButton.setParams({ color: webApp.themeParams.button_color || '#007AFF' });
+            webApp.MainButton.show();
+            webApp.MainButton.enable();
             webApp.BackButton.hide();
         };
+        
         es.onmessage = e => {
-            const data = JSON.parse(e.data);
-            if(data.type !== 'log') ui.progressHeader.classList.remove('hidden');
-            switch(data.type) {
-                case 'start': ui.progressHeader.textContent = `Найдено: ${data.total}`; ui.logText.textContent = data.message; break;
-                case 'progress':
-                    ui.progressBar.style.width = `${(data.current / data.total) * 100}%`;
-                    ui.progressText.textContent = `${data.current} / ${data.total}`;
-                    if(data.message) ui.logText.textContent = data.message;
-                    break;
-                case 'result':
-                    ui.progressHeader.textContent = 'Готово!';
-                    ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
-                    const downloadUrl = `/download/${data.download_filename}`;
-                    ui.downloadButton.classList.remove('hidden');
-                    ui.downloadButton.textContent = `Скачать Excel`;
-                    ui.downloadButton.onclick = () => webApp.openLink(downloadUrl);
+            try {
+                const data = JSON.parse(e.data);
+                
+                switch(data.type) {
+                    case 'start':
+                        ui.progressHeader.textContent = `Найдено товаров: ${data.total}`;
+                        ui.logText.textContent = data.message;
+                        break;
+                        
+                    case 'progress':
+                        ui.progressBar.style.width = `${(data.current / data.total) * 100}%`;
+                        ui.progressText.textContent = `${data.current} / ${data.total}`;
+                        if (data.message) {
+                            ui.logText.textContent = data.message;
+                        }
+                        break;
+                        
+                    case 'log':
+                        ui.logText.textContent = data.message;
+                        break;
+                        
+                    case 'result':
+                        ui.progressHeader.textContent = 'Готово!';
+                        ui.progressHeader.className = 'progress-header result-success';
+                        ui.progressBar.style.width = '100%';
+                        ui.logText.textContent = 'Файл успешно создан и сохранен в истории.';
+                        ui.logText.className = 'log-text result-success';
+                        
+                        const downloadUrl = `/download/${data.download_filename}`;
+                        ui.downloadButton.classList.remove('hidden');
+                        ui.downloadButton.textContent = 'Скачать Excel';
+                        ui.downloadButton.onclick = () => webApp.openLink(downloadUrl);
 
-                    // Сохраняем в историю
-                    saveHistory({
-                        subcategory: state.subcategory,
-                        timestamp: new Date().toISOString(),
-                        downloadUrl: downloadUrl,
-                    });
-                    
-                    es.close(); 
-                    onFinish(); 
-                    break;
-                case 'error':
-                    ui.progressHeader.textContent = 'Ошибка';
-                    ui.logText.textContent = data.message; ui.logText.style.color = 'var(--tg-destructive)';
-                    es.close(); onFinish(true); break;
+                        saveHistory({
+                            subcategory: state.subcategory,
+                            timestamp: new Date().toISOString(),
+                            downloadUrl: downloadUrl,
+                        });
+                        
+                        es.close(); 
+                        onFinish(); 
+                        break;
+                        
+                    case 'error':
+                        ui.progressHeader.textContent = 'Ошибка';
+                        ui.progressHeader.className = 'progress-header result-error';
+                        ui.logText.textContent = data.message; 
+                        ui.logText.className = 'log-text result-error';
+                        es.close(); 
+                        onFinish(true); 
+                        break;
+                }
+            } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
             }
         };
+        
         es.onerror = (e) => { 
-            ui.progressHeader.textContent = 'Ошибка сети'; ui.logText.textContent = 'Потеряно соединение с сервером.';
-            es.close(); onFinish(true);
+            ui.progressHeader.textContent = 'Ошибка сети';
+            ui.progressHeader.className = 'progress-header result-error';
+            ui.logText.textContent = 'Потеряно соединение с сервером.';
+            ui.logText.className = 'log-text result-error';
+            es.close(); 
+            onFinish(true);
         };
     };
 
     const initApp = async () => {
         try {
-            if (!webApp.initData) { document.body.innerHTML = '<h1 style="text-align:center; margin-top: 50px;">Не является приложением Telegram</h1>'; return; }
+            if (!webApp.initData) { 
+                document.body.innerHTML = '<h1 style="text-align:center; margin-top: 50px;">Не является приложением Telegram</h1>'; 
+                return; 
+            }
             
             initUI();
 
             ui.profileAvatar.onclick = loadProfileData;
             
             [ui.sellerId, ui.brandId].forEach(input => input.addEventListener('input', updateMainButton));
+            
             [ui.categorySearch, ui.subcategorySearch].forEach(input => {
                 input.addEventListener('input', e => {
                     const type = input.id.includes('category') ? 'category' : 'subcategory';
-                    const source = type === 'category' ? Object.keys(state.categoriesData) : (state.category ? Object.keys(state.categoriesData[state.category]) : []);
+                    const source = type === 'category' ? 
+                        Object.keys(state.categoriesData) : 
+                        (state.category ? Object.keys(state.categoriesData[state.category]) : []);
                     renderList(ui[`${type}List`], source, type, e.target.value);
                 });
             });
 
-            // Загружаем историю при старте
             const localHistory = localStorage.getItem('parsingHistory');
             if (localHistory) {
                 state.history = JSON.parse(localHistory);
@@ -492,6 +733,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             ui.tariffDisplay.textContent = state.user.tariff;
             ui.tariffDisplay.className = `tariff-display tariff-${state.user.tariff}`;
+            
             if (webApp.initDataUnsafe.user?.photo_url) {
                 ui.profileAvatar.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
             }
@@ -505,7 +747,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch(e) { 
             webApp.showAlert(`Критическая ошибка инициализации: ${e.message}`);
-            document.body.innerHTML = `<h1 style="text-align:center; margin-top: 50px; color: var(--tg-destructive);">Ошибка: ${e.message}</h1><p style="text-align:center; color: var(--tg-hint);">Попробуйте перезапустить приложение.</p>`;
+            document.body.innerHTML = `
+                <h1 style="text-align:center; margin-top: 50px; color: var(--tg-destructive);">Ошибка: ${e.message}</h1>
+                <p style="text-align:center; color: var(--tg-hint);">Попробуйте перезапустить приложение.</p>
+            `;
         }
     };
 
