@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -19,10 +20,6 @@
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
             --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
             --tariff-free: #8e8e93; --tariff-pro: #5856d6; --tariff-ultima: #ff9500;
-            
-            /* Новые переменные для кнопок */
-            --button-active: var(--tg-button, #007aff);
-            --button-inactive: #9e9e9e;
         }
 
         body {
@@ -41,10 +38,24 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .app-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; margin-bottom: 10px; flex-shrink: 0;
+            position: relative;
+            height: 50px; /* Explicit height */
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .app-header.hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            height: 0;
+            margin-bottom: 0;
         }
         .tariff-display {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
             font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 15px;
             text-transform: uppercase; color: white;
         }
@@ -52,6 +63,10 @@
         .tariff-pro { background-color: var(--tariff-pro); }
         .tariff-ultima { background-color: var(--tariff-ultima); }
         .profile-avatar {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
             width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
             background-color: var(--tg-secondary-bg); background-size: cover; background-position: center;
         }
@@ -82,6 +97,7 @@
         #summary-content p { margin: 0; font-size: 16px; display: flex; justify-content: space-between; }
         #summary-content span { font-weight: 600; text-align: right; }
 
+        #profile-page { padding-top: 15px; }
         #profile-info { display: flex; align-items: center; flex-direction: column; margin-bottom: 25px; }
         #profile-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; background-color: var(--tg-secondary-bg);}
         #profile-info h2 { margin: 0; font-size: 22px; }
@@ -97,8 +113,7 @@
 </head>
 <body>
 
-<div class="app-header">
-    <div></div> <!-- Placeholder -->
+<div class="app-header" id="app-header">
     <div class="tariff-display" id="tariff-display"></div>
     <div class="profile-avatar" id="profile-avatar"></div>
 </div>
@@ -137,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div id="step-progress" class="step" style="justify-content: center; text-align: center;"> <h1 id="progress-header"></h1> <div style="background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0;"><div id="progress-bar" style="width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px;"></div></div> <p id="progress-text"></p> <p id="log-text"></p> <button id="download-button" class="hidden" style="background-image: var(--button-gradient); color: var(--tg-button-text); padding: 15px 30px; text-decoration: none; border-radius: 12px; margin-top: 30px; font-weight: 600; font-size: 17px; border: none; box-shadow: var(--button-shadow);"></button> </div>
         `;
         
-        const ids = ['parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list'];
+        const ids = ['app-header', 'parser-page', 'profile-page', 'step1', 'step2', 'step3', 'step4', 'step5', 'step-progress', 'seller-id', 'brand-id', 'category-search', 'subcategory-search', 'category-list', 'subcategory-list', 'summary-content', 'progress-header', 'progress-bar', 'progress-text', 'log-text', 'download-button', 'tariff-display', 'profile-avatar', 'profile-img', 'profile-name', 'history-list'];
         ids.forEach(id => { ui[id.replace(/-(\w)/g, (_, c) => c.toUpperCase())] = document.getElementById(id); });
         showPage('parser');
         goToStep(1);
@@ -147,6 +162,13 @@ document.addEventListener('DOMContentLoaded', function() {
         state.currentPage = page;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         ui[`${page}Page`].classList.add('active');
+
+        if (page === 'profile') {
+            ui.appHeader.classList.add('hidden');
+        } else {
+            ui.appHeader.classList.remove('hidden');
+        }
+
         updateMainButton();
         updateBackButton();
     };
@@ -179,17 +201,9 @@ document.addEventListener('DOMContentLoaded', function() {
             default: webApp.MainButton.hide(); return;
         }
         webApp.MainButton.setText(text);
-        if (isEnabled) {
-            // Активная кнопка - синяя
-            webApp.MainButton.enable().setParams({ 
-                color: webApp.themeParams.button_color || '#007AFF' 
-            });
-        } else {
-            // Неактивная кнопка - серая
-            webApp.MainButton.disable().setParams({ 
-                color: '#9E9E9E' 
-            });
-        }
+        isEnabled 
+            ? webApp.MainButton.enable().setParams({ color: webApp.themeParams.button_color || '#007AFF' })
+            : webApp.MainButton.disable().setParams({ color: '#9E9E9E' });
     };
 
     webApp.onEvent('mainButtonClicked', () => {
