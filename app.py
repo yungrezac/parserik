@@ -6,19 +6,15 @@ import time
 import datetime
 import math
 import random
-from urllib.parse import urlparse, urlencode, unquote
+from urllib.parse import unquote
 import requests
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, NamedStyle
 from flask import Flask, render_template, request, send_from_directory, Response, stream_with_context, jsonify
-import hmac
-import hashlib
 
 # --- Инициализация Flask ---
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
-# ВАЖНО: Установите этот токен в переменных окружения для продакшена
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE') 
 
 DB_FILE = 'database.json'
 
@@ -36,40 +32,22 @@ def save_db(data):
     with open(DB_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# --- Аутентификация Telegram ---
+# --- Аутентификация Telegram --- 
 def is_valid_telegram_data(init_data_str):
-    # --- РЕЖИМ РАЗРАБОТКИ ---
-    # Если токен не установлен, включаем небезопасный режим для отладки UI.
-    # ВНИМАНИЕ: Это не должно использоваться в продакшене!
-    if BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
-        print("\033[93mWARNING: Telegram authentication is in INSECURE debug mode. Set BOT_TOKEN for production.\033[0m")
-        try:
-            params = dict(x.split('=', 1) for x in unquote(init_data_str).split('&'))
-            user_data = json.loads(params['user'])
-            return user_data, True
-        except Exception as e:
-            print(f"DEBUG MODE ERROR: Could not parse initData: {e}")
-            return None, False
-
-    # --- Продакшен-проверка --- 
-    try:
-        data_check_string = unquote(init_data_str)
-        secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
-        
-        params = dict(sorted([x.split('=', 1) for x in data_check_string.split('&')]))
-
-        hash_val = params.pop('hash')
-        data_for_hash = "\n".join([f'{k}={v}' for k, v in params.items()])
-
-        calculated_hash = hmac.new(secret_key, data_for_hash.encode(), hashlib.sha256).hexdigest()
-
-        if calculated_hash == hash_val:
-            user_data = json.loads(params['user'])
-            return user_data, True
-    except Exception:
+    """
+    Извлекает данные пользователя из initData без криптографической проверки.
+    ВАЖНО: Это небезопасно и подходит только для внутреннего использования,
+    так как не проверяет, что данные действительно пришли от Telegram.
+    """
+    if not init_data_str:
         return None, False
-
-    return None, False
+    try:
+        params = dict(x.split('=', 1) for x in unquote(init_data_str).split('&'))
+        user_data = json.loads(params['user'])
+        return user_data, True
+    except Exception as e:
+        print(f"Could not parse initData: {e}")
+        return None, False
 
 def get_or_create_user(user_data):
     db = load_db()
@@ -86,14 +64,13 @@ def get_or_create_user(user_data):
         save_db(db)
     return db['users'][user_id]
 
-# --- Новые API маршруты ---
+# --- API маршруты ---
 @app.route('/api/me', methods=['POST'])
 def get_me():
     init_data = request.json.get('initData')
     user_data, is_valid = is_valid_telegram_data(init_data)
     if not is_valid:
         return jsonify({"error": "Invalid initData"}), 403
-    
     user_profile = get_or_create_user(user_data)
     return jsonify(user_profile)
 
@@ -103,7 +80,6 @@ def get_history():
     user_data, is_valid = is_valid_telegram_data(init_data)
     if not is_valid:
         return jsonify({"error": "Invalid initData"}), 403
-
     user_id = str(user_data['id'])
     db = load_db()
     user_history = [p for p in db['parses'] if p['user_id'] == user_id]
@@ -125,35 +101,30 @@ def get_categories():
 
 @app.route('/stream')
 def stream_run():
-    seller_id = request.args.get('seller_id')
-    brand_id = request.args.get('brand_id')
-    category = request.args.get('category')
-    subcategory = request.args.get('subcategory')
-    init_data = request.args.get('initData')
-
-    user_data, is_valid = is_valid_telegram_data(init_data)
+    args = request.args
+    user_data, is_valid = is_valid_telegram_data(args.get('initData'))
     if not is_valid:
         return Response(json.dumps({'type': 'error', 'message': 'Ошибка аутентификации.'}), mimetype='text/event-stream')
 
-    if not all([seller_id, category, subcategory]):
+    if not all(k in args for k in ['seller_id', 'category', 'subcategory']):
         return Response("Ошибка: не указаны параметры.", status=400)
 
     def generate():
         try:
             with open('subcategories.json', 'r', encoding='utf-8') as f:
                 categories_data = json.load(f)
-            columns = categories_data.get(category, {}).get(subcategory)
+            columns = categories_data.get(args.get('category'), {}).get(args.get('subcategory'))
             if not columns:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
 
-            for update in stream_parser(seller_id, brand_id, columns):
+            for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns):
                 if update.get('type') == 'result':
                     db = load_db()
                     user_id = str(user_data['id'])
                     new_parse = {
-                        'id': len(db['parses']) + 1, 'user_id': user_id, 'seller_id': seller_id,
-                        'brand_id': brand_id, 'category': category, 'subcategory': subcategory,
+                        'id': len(db['parses']) + 1, 'user_id': user_id, 'seller_id': args.get('seller_id'),
+                        'brand_id': args.get('brand_id'), 'category': args.get('category'), 'subcategory': args.get('subcategory'),
                         'filename': update['download_filename'], 'timestamp': datetime.datetime.utcnow().isoformat()
                     }
                     db['parses'].append(new_parse)
@@ -169,7 +140,7 @@ def download_file(filename):
     directory = os.path.join(os.getcwd(), 'downloads')
     return send_from_directory(directory, filename, as_attachment=True)
 
-# --- ЛОГИКА ПАРСИНГА (без серьезных изменений) ---
+# --- ЛОГИКА ПАРСИНГА (без изменений) ---
 headers = {
     'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru', 
     'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
