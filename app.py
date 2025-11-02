@@ -16,23 +16,7 @@ from flask import Flask, render_template, request, send_from_directory, Response
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
 
-DB_FILE = 'database.json'
-
-# --- Работа с БД (JSON) ---
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return {'users': {}, 'parses': []}
-    try:
-        with open(DB_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
-        return {'users': {}, 'parses': []}
-
-def save_db(data):
-    with open(DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-# --- Аутентификация Telegram --- 
+# --- Аутентификация Telegram ---
 def is_valid_telegram_data(init_data_str):
     """
     Извлекает данные пользователя из initData без криптографической проверки.
@@ -49,20 +33,17 @@ def is_valid_telegram_data(init_data_str):
         print(f"Could not parse initData: {e}")
         return None, False
 
-def get_or_create_user(user_data):
-    db = load_db()
-    user_id = str(user_data['id'])
-    if user_id not in db['users']:
-        db['users'][user_id] = {
-            'id': user_id,
-            'first_name': user_data.get('first_name', ''),
-            'last_name': user_data.get('last_name', ''),
-            'username': user_data.get('username', ''),
-            'tariff': 'free', # Тариф по умолчанию
-            'created_at': datetime.datetime.utcnow().isoformat()
-        }
-        save_db(db)
-    return db['users'][user_id]
+def get_user_profile(user_data):
+    # Вместо создания и сохранения пользователя, просто возвращаем данные из initData
+    # Добавляем 'тариф' по умолчанию, так как фронтенд его ожидает.
+    return {
+        'id': str(user_data.get('id')),
+        'first_name': user_data.get('first_name', ''),
+        'last_name': user_data.get('last_name', ''),
+        'username': user_data.get('username', ''),
+        'tariff': 'free', # Тариф по умолчанию
+        'created_at': datetime.datetime.utcnow().isoformat() # Можно оставить для информации
+    }
 
 # --- API маршруты ---
 @app.route('/api/me', methods=['POST'])
@@ -71,20 +52,15 @@ def get_me():
     user_data, is_valid = is_valid_telegram_data(init_data)
     if not is_valid:
         return jsonify({"error": "Invalid initData"}), 403
-    user_profile = get_or_create_user(user_data)
+    # Просто возвращаем профиль на основе данных Telegram
+    user_profile = get_user_profile(user_data)
     return jsonify(user_profile)
 
 @app.route('/api/history', methods=['POST'])
 def get_history():
-    init_data = request.json.get('initData')
-    user_data, is_valid = is_valid_telegram_data(init_data)
-    if not is_valid:
-        return jsonify({"error": "Invalid initData"}), 403
-    user_id = str(user_data['id'])
-    db = load_db()
-    user_history = [p for p in db['parses'] if p['user_id'] == user_id]
-    user_history.sort(key=lambda x: x['timestamp'], reverse=True)
-    return jsonify(user_history)
+    # Этот эндпоинт больше не нужен, так как история хранится на клиенте.
+    # Возвращаем пустой список для обратной совместимости.
+    return jsonify([])
 
 # --- Основные маршруты ---
 @app.route('/')
@@ -118,22 +94,16 @@ def stream_run():
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
 
+            # Логика парсинга остается, но без сохранения в БД
             for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns):
-                if update.get('type') == 'result':
-                    db = load_db()
-                    user_id = str(user_data['id'])
-                    new_parse = {
-                        'id': len(db['parses']) + 1, 'user_id': user_id, 'seller_id': args.get('seller_id'),
-                        'brand_id': args.get('brand_id'), 'category': args.get('category'), 'subcategory': args.get('subcategory'),
-                        'filename': update['download_filename'], 'timestamp': datetime.datetime.utcnow().isoformat()
-                    }
-                    db['parses'].append(new_parse)
-                    save_db(db)
+                # Просто передаем все события клиенту
                 yield f"data: {json.dumps(update)}\n\n"
+
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': f'Критическая ошибка: {e}'})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
@@ -142,7 +112,7 @@ def download_file(filename):
 
 # --- ЛОГИКА ПАРСИНГА (без изменений) ---
 headers = {
-    'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru', 
+    'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru',
     'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 }
 
@@ -171,7 +141,7 @@ def stream_parser(seller_id, brand_id, columns):
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             item['advanced'] = {}
-            if backetName: 
+            if backetName:
                 urlItem = f"https://{backetName}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 try:
                     adv_res = make_request(urlItem, headers, timeout=2)
@@ -186,6 +156,7 @@ def stream_parser(seller_id, brand_id, columns):
     output_path = create_excel_file(mapped_data, columns)
     if not output_path: raise Exception("Не удалось создать Excel-файл.")
     download_filename = os.path.basename(output_path)
+    # Это событие теперь будет перехвачено на клиенте для сохранения в localStorage
     yield {'type': 'result', 'download_filename': download_filename}
 
 def make_request(url, headers, timeout=10, retries=3, backoff_factor=0.3):
@@ -199,14 +170,14 @@ def make_request(url, headers, timeout=10, retries=3, backoff_factor=0.3):
             time.sleep(backoff_factor * (2 ** i))
 
 def get_mediabasket_route_map():
-    try: 
+    try:
         r = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers)
         return r.json().get('recommend', {}).get('mediabasket_route_map', [{}])[0].get('hosts', [])
     except: return []
 
 def get_host_by_range(val, route_map):
     if not isinstance(route_map, list): return ''
-    for host in route_map: 
+    for host in route_map:
         if host.get('vol_range_from') <= val <= host.get('vol_range_to'): return host.get('host')
     return ''
 
@@ -225,10 +196,9 @@ def map_data(data, columns):
         row_data = {col: master_mapping.get(col, lambda i, a: find_value_in_options(a.get('options', []), col))(item, adv) for col in columns}
         new_data.append(row_data)
     return new_data
-
 def find_value_in_options(options, name):
     if not isinstance(options, list): return ''
-    for opt in options: 
+    for opt in options:
         if isinstance(opt, dict) and opt.get('name') == name: return opt.get('value')
     return ''
 
