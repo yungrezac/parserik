@@ -16,13 +16,28 @@ from flask import Flask, render_template, request, send_from_directory, Response
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
 
-# --- Аутентификация Telegram ---
+# --- Конфигурация для хранения данных ---
+DATA_DIR = 'data'
+USERS_FILE = os.path.join(DATA_DIR, 'users.json')
+HISTORY_FILE = os.path.join(DATA_DIR, 'history.json')
+
+# --- Функции для работы с файлами ---
+def load_data(file_path):
+    if not os.path.exists(file_path):
+        return {}
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return {}
+
+def save_data(file_path, data):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+# --- Аутентификация и управление пользователями ---
 def is_valid_telegram_data(init_data_str):
-    """
-    Извлекает данные пользователя из initData без криптографической проверки.
-    ВАЖНО: Это небезопасно и подходит только для внутреннего использования,
-    так как не проверяет, что данные действительно пришли от Telegram.
-    """
     if not init_data_str:
         return None, False
     try:
@@ -34,16 +49,21 @@ def is_valid_telegram_data(init_data_str):
         return None, False
 
 def get_user_profile(user_data):
-    # Вместо создания и сохранения пользователя, просто возвращаем данные из initData
-    # Добавляем 'тариф' по умолчанию, так как фронтенд его ожидает.
-    return {
-        'id': str(user_data.get('id')),
-        'first_name': user_data.get('first_name', ''),
-        'last_name': user_data.get('last_name', ''),
-        'username': user_data.get('username', ''),
-        'tariff': 'free', # Тариф по умолчанию
-        'created_at': datetime.datetime.utcnow().isoformat() # Можно оставить для информации
-    }
+    users = load_data(USERS_FILE)
+    user_id = str(user_data.get('id'))
+    
+    if user_id not in users:
+        users[user_id] = {
+            'id': user_id,
+            'first_name': user_data.get('first_name', ''),
+            'last_name': user_data.get('last_name', ''),
+            'username': user_data.get('username', ''),
+            'tariff': 'free',
+            'created_at': datetime.datetime.utcnow().isoformat()
+        }
+        save_data(USERS_FILE, users)
+        
+    return users[user_id]
 
 # --- API маршруты ---
 @app.route('/api/me', methods=['POST'])
@@ -52,15 +72,43 @@ def get_me():
     user_data, is_valid = is_valid_telegram_data(init_data)
     if not is_valid:
         return jsonify({"error": "Invalid initData"}), 403
-    # Просто возвращаем профиль на основе данных Telegram
+    
     user_profile = get_user_profile(user_data)
     return jsonify(user_profile)
 
 @app.route('/api/history', methods=['POST'])
 def get_history():
-    # Этот эндпоинт больше не нужен, так как история хранится на клиенте.
-    # Возвращаем пустой список для обратной совместимости.
-    return jsonify([])
+    init_data = request.json.get('initData')
+    user_data, is_valid = is_valid_telegram_data(init_data)
+    if not is_valid:
+        return jsonify({"error": "Invalid initData"}), 403
+        
+    user_id = str(user_data.get('id'))
+    history = load_data(HISTORY_FILE)
+    user_history = history.get(user_id, [])
+    return jsonify(user_history)
+
+@app.route('/api/history/add', methods=['POST'])
+def add_to_history():
+    init_data = request.json.get('initData')
+    user_data, is_valid = is_valid_telegram_data(init_data)
+    if not is_valid:
+        return jsonify({"error": "Invalid initData"}), 403
+        
+    user_id = str(user_data.get('id'))
+    history_item = request.json.get('historyItem')
+
+    history = load_data(HISTORY_FILE)
+    if user_id not in history:
+        history[user_id] = []
+    
+    history[user_id].insert(0, history_item)
+    # Ограничение на 50 записей
+    history[user_id] = history[user_id][:50]
+    
+    save_data(HISTORY_FILE, history)
+    return jsonify({"success": True})
+
 
 # --- Основные маршруты ---
 @app.route('/')
@@ -93,10 +141,10 @@ def stream_run():
             if not columns:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Нет столбцов для подкатегории.'})}\n\n"
                 return
+            
+            user_id = str(user_data.get('id'))
 
-            # Логика парсинга остается, но без сохранения в БД
-            for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns):
-                # Просто передаем все события клиенту
+            for update in stream_parser(args.get('seller_id'), args.get('brand_id'), columns, user_id):
                 yield f"data: {json.dumps(update)}\n\n"
 
         except Exception as e:
@@ -110,13 +158,13 @@ def download_file(filename):
     directory = os.path.join(os.getcwd(), 'downloads')
     return send_from_directory(directory, filename, as_attachment=True)
 
-# --- ЛОГИКА ПАРСИНГА (без изменений) ---
+# --- ЛОГИКА ПАРСИНГА ---
 headers = {
     'Accept': '*/*', 'Accept-Language': 'ru-RU,ru;q=0.9', 'Connection': 'keep-alive', 'Origin': 'https://www.wildberries.ru',
     'Referer': 'https://www.wildberries.ru/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 }
 
-def stream_parser(seller_id, brand_id, columns):
+def stream_parser(seller_id, brand_id, columns, user_id):
     all_products = []
     yield {'type': 'log', 'message': 'Получение карты маршрутов WB...'}
     baskets = get_mediabasket_route_map()
@@ -153,10 +201,10 @@ def stream_parser(seller_id, brand_id, columns):
     yield {'type': 'log', 'message': 'Формирование таблицы...'}
     mapped_data = map_data(all_products, columns)
     yield {'type': 'log', 'message': 'Создание Excel-файла...'}
-    output_path = create_excel_file(mapped_data, columns)
+    output_path = create_excel_file(mapped_data, columns, user_id)
     if not output_path: raise Exception("Не удалось создать Excel-файл.")
     download_filename = os.path.basename(output_path)
-    # Это событие теперь будет перехвачено на клиенте для сохранения в localStorage
+
     yield {'type': 'result', 'download_filename': download_filename}
 
 def make_request(url, headers, timeout=10, retries=3, backoff_factor=0.3):
@@ -196,17 +244,23 @@ def map_data(data, columns):
         row_data = {col: master_mapping.get(col, lambda i, a: find_value_in_options(a.get('options', []), col))(item, adv) for col in columns}
         new_data.append(row_data)
     return new_data
+
 def find_value_in_options(options, name):
     if not isinstance(options, list): return ''
     for opt in options:
         if isinstance(opt, dict) and opt.get('name') == name: return opt.get('value')
     return ''
 
-def create_excel_file(data, columns):
+def create_excel_file(data, columns, user_id):
     if not data: return None
-    os.makedirs("downloads", exist_ok=True)
+    
+    # Создаем директорию для пользователя
+    user_downloads_dir = os.path.join('downloads', user_id)
+    os.makedirs(user_downloads_dir, exist_ok=True)
+    
     filename = f"wb_parse_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
-    output_path = os.path.join("downloads", filename)
+    output_path = os.path.join(user_downloads_dir, filename)
+    
     wb = Workbook()
     ws = wb.active
     ws.title = "Результаты"
