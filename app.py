@@ -6,7 +6,7 @@ import time
 import datetime
 import math
 import random
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, parse_qs
 import requests
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, NamedStyle
@@ -40,34 +40,32 @@ def get_categories():
     try:
         with open('subcategories.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return jsonify(data)
+        # Теперь возвращаем только те категории и подкатегории, у которых есть ID
+        # и возвращаем структуру, которую фронтенд может легко использовать.
+        categories_with_subcategories = {}
+        for cat_name, cat_data in data.items():
+            if isinstance(cat_data, dict):
+                subcategories = {sub_name: sub_data.get('id', '') for sub_name, sub_data in cat_data.items() if isinstance(sub_data, dict) and 'id' in sub_data}
+                if subcategories:
+                    categories_with_subcategories[cat_name] = subcategories
+        return jsonify(categories_with_subcategories)
+
     except (FileNotFoundError, json.JSONDecodeError):
         return jsonify({"error": "Файл subcategories.json не найден или поврежден."}), 500
 
 @app.route('/stream')
 def stream_run():
     seller_id = request.args.get('seller_id')
-    brand_id = request.args.get('brand_id') # Станет опциональным
-    category = request.args.get('category')
-    subcategory = request.args.get('subcategory')
+    brand_id = request.args.get('brand_id')
+    xsubject_id = request.args.get('xsubject_id')
 
-    # ID Бренда больше не обязателен
-    if not all([seller_id, category, subcategory]):
-        return Response("Ошибка: не указаны обязательные параметры (seller_id, category, subcategory).", status=400)
+    if not seller_id:
+        return Response("Ошибка: не указан обязательный параметр (seller_id).", status=400)
 
     def generate():
         try:
-            with open('subcategories.json', 'r', encoding='utf-8') as f:
-                categories_data = json.load(f)
-            
-            columns = categories_data.get(category, {}).get(subcategory)
-            if not columns or not isinstance(columns, list):
-                error_payload = json.dumps({"type": "error", "message": "Для данной подкатегории не заданы столбцы."}) 
-                yield f"data: {error_payload}\n\n"
-                return
-
-            # Передаем опциональный brand_id в парсер
-            for progress_update in stream_parser(seller_id, brand_id, columns):
+            # brand_id и xsubject_id опциональны, передаем их в парсер
+            for progress_update in stream_parser(seller_id, brand_id, xsubject_id):
                 yield f"data: {progress_update}\n\n"
                 time.sleep(0.05)
 
@@ -77,6 +75,7 @@ def stream_run():
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
+
 @app.route('/download/<path:filename>')
 def download_file(filename):
     directory = os.path.join(os.getcwd(), 'downloads')
@@ -85,8 +84,9 @@ def download_file(filename):
     except FileNotFoundError:
         return "Файл не найден.", 404
 
-# --- Логика парсинга ---
-def stream_parser(seller_id, brand_id, columns):
+# --- Логика парсинга (взята из main.py) ---
+
+def stream_parser(seller_id, brand_id, xsubject_id=None):
     all_products = []
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
     baskets = get_mediabasket_route_map()
@@ -95,8 +95,9 @@ def stream_parser(seller_id, brand_id, columns):
 
     # Динамическое формирование URL
     brand_query = f"&fbrand={brand_id}" if brand_id else ""
-    
-    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}&lang=ru&spp=30&uclusters=0"
+    xsubject_query = f"&xsubject={xsubject_id}" if xsubject_id else ""
+
+    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}{xsubject_query}&lang=ru&spp=30&uclusters=0"
     
     try:
         res_total = make_request(url_total_list, headers=headers).json()
@@ -105,14 +106,14 @@ def stream_parser(seller_id, brand_id, columns):
         raise Exception(f"Ошибка при получении общего числа товаров: {e}")
 
     if not products_total:
-        raise Exception("Товары не найдены. Проверьте ID продавца и бренда.")
+        raise Exception("Товары не найдены. Проверьте ID продавца, бренда или подкатегории.")
 
     pages_count = math.ceil(products_total / 100)
     yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}.'})
 
     count = 0
     for page_num in range(1, pages_count + 1):
-        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&hide_dtype=13&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}"
+        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&hide_dtype=13&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}{xsubject_query}"
         try:
             products_on_page = make_request(url_list, headers=headers).json().get('products', [])
         except (requests.exceptions.RequestException, json.JSONDecodeError):
@@ -122,7 +123,6 @@ def stream_parser(seller_id, brand_id, columns):
             count += 1
             yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')})
             
-            # --- (Этот блок оставлен без изменений) ---
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             backetNumber, isAutoServer = 1, bool(backetName)
@@ -142,8 +142,11 @@ def stream_parser(seller_id, brand_id, columns):
 
         time.sleep(random.uniform(0.5, 1.5))
 
+    # Определение колонок для Excel на основе подкатегории
+    columns = get_columns_for_subcategory(xsubject_id)
+
     yield json.dumps({'type': 'log', 'message': 'Формирование таблицы...'})
-    mapped_data = map_data(all_products, columns)
+    mapped_data = map_data(all_products, columns) # Теперь передаем динамические колонки
 
     yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
     output_path = create_excel_file(mapped_data, columns)
@@ -153,7 +156,19 @@ def stream_parser(seller_id, brand_id, columns):
     download_filename = os.path.basename(output_path)
     yield json.dumps({'type': 'result', 'download_filename': download_filename})
 
-# --- Вспомогательные функции ---
+
+def get_columns_for_subcategory(xsubject_id):
+    if not xsubject_id:
+        return []
+    with open('subcategories.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    for cat_data in data.values():
+        if isinstance(cat_data, dict):
+            for sub_data in cat_data.values():
+                if isinstance(sub_data, dict) and sub_data.get('id') == xsubject_id:
+                    return sub_data.get('columns', [])
+    return []
+
 def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
     for i in range(retries):
         try:
@@ -187,6 +202,7 @@ def map_data(data, columns):
         'Страна производства': lambda item, adv: find_value_in_options(adv.get('options', []), 'Страна производства'),
         'Комплектация': lambda item, adv: find_value_in_options(adv.get('options', []), 'Комплектация'),
         'ТНВЭД': lambda item, adv: find_value_in_options(adv.get('options', []), 'ТН ВЭД'),
+        'Категория продавца': lambda item, adv: adv.get('subj_root_name', ''),
     }
     new_data = []
     for item in data:
@@ -223,9 +239,10 @@ def create_excel_file(data, columns):
     header_style.alignment = Alignment(horizontal='center', vertical='center')
     wb.add_named_style(header_style)
     
-    ws.append(columns)
-    for cell in ws[1]:
-        cell.style = header_style
+    if columns: # Только если колонки определены
+        ws.append(columns)
+        for cell in ws[1]:
+            cell.style = header_style
     
     for row_data in data:
         ws.append([row_data.get(header, '') for header in columns])
