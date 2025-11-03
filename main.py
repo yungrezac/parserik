@@ -211,7 +211,7 @@ def map_data(data, baskets):
             'Артикул продавца': item.get('vendorCode', ''),
             'Артикул WB': '',  # Оставляем пустым
             'Наименование': item.get('name', ''),
-            'Категория продавца': '', 
+            'Категория продавца': advanced.get('subj_root_name', ''), 
             'Бренд': item.get('brand', ''),
             'Описание': advanced.get('description', ''),
             'Фото': '',  # Оставляем пустым
