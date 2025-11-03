@@ -265,9 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const fetchCategories = async () => {
         try {
             const response = await fetch('/categories');
-            state.categoriesData = await response.json();
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            state.categoriesData = data;
             renderList(ui.lists.category, Object.keys(state.categoriesData), 'category');
-        } catch (e) { console.error("Ошибка загрузки категорий"); }
+        } catch (e) {
+            console.error("Ошибка загрузки категорий:", e.message);
+            const categoryList = document.getElementById('category-list');
+            categoryList.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-destructive);">Ошибка загрузки категорий: ${e.message}</div>`;
+        }
     };
 
     const renderList = (element, items, type, filter = '') => {
