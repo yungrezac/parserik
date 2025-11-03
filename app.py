@@ -38,16 +38,14 @@ def index():
 @app.route('/categories')
 def get_categories():
     try:
-        with open('subcategories.json', 'r', encoding='utf-8') as f:
+        json_path = os.path.join(app.root_path, 'subcategories.json')
+        with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        # Теперь возвращаем только те категории и подкатегории, у которых есть ID
-        # и возвращаем структуру, которую фронтенд может легко использовать.
         categories_with_subcategories = {}
         for cat_name, cat_data in data.items():
             if isinstance(cat_data, dict):
-                subcategories = {sub_name: sub_data.get('id', '') for sub_name, sub_data in cat_data.items() if isinstance(sub_data, dict) and 'id' in sub_data}
-                if subcategories:
-                    categories_with_subcategories[cat_name] = subcategories
+                subcategories = {sub_name: sub_data.get('id', '') for sub_name, sub_data in cat_data.items() if isinstance(sub_data, dict)}
+                categories_with_subcategories[cat_name] = subcategories
         return jsonify(categories_with_subcategories)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -85,7 +83,6 @@ def download_file(filename):
         return "Файл не найден.", 404
 
 # --- Логика парсинга (взята из main.py) ---
-
 def stream_parser(seller_id, brand_id, xsubject_id=None):
     all_products = []
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
@@ -156,11 +153,11 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
     download_filename = os.path.basename(output_path)
     yield json.dumps({'type': 'result', 'download_filename': download_filename})
 
-
 def get_columns_for_subcategory(xsubject_id):
     if not xsubject_id:
         return []
-    with open('subcategories.json', 'r', encoding='utf-8') as f:
+    json_path = os.path.join(app.root_path, 'subcategories.json')
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     for cat_data in data.values():
         if isinstance(cat_data, dict):
