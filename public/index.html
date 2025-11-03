@@ -19,6 +19,8 @@
 
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
             --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+            --success-gradient: linear-gradient(135deg, #34c759, #28a745);
+            --success-shadow: 0 4px 15px rgba(52, 199, 89, 0.4);
         }
 
         body {
@@ -30,106 +32,113 @@
             -webkit-font-smoothing: antialiased;
             display: flex;
             flex-direction: column;
-            height: 100vh; /* Use full viewport height */
-            box-sizing: border-box; /* Include padding in height calculation */
+            height: 100vh;
+            box-sizing: border-box;
             overflow: hidden;
         }
 
         .container { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
-        
-        .step {
-            display: none;
-            flex-direction: column;
-            flex-grow: 1;
-            min-height: 0; /* Critical for scrolling */
-            animation: fadeIn 0.4s ease-in-out;
-        }
-
+        .step { display: none; flex-direction: column; flex-grow: 1; min-height: 0; animation: fadeIn 0.4s ease-in-out; }
         .step.active { display: flex; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin: 0 0 20px 0;
-            padding: 5px 0;
-        }
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 20px 0; padding: 5px 0; }
         
         .input-group { margin-bottom: 25px; }
 
         input[type="text"], input[type="search"] {
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 17px;
-            background-color: var(--tg-secondary-bg);
-            color: var(--tg-text);
-            box-sizing: border-box;
-            transition: box-shadow 0.2s;
+            width: 100%; padding: 14px; margin-bottom: 15px; border: none; border-radius: 10px;
+            font-size: 17px; background-color: var(--tg-secondary-bg); color: var(--tg-text);
+            box-sizing: border-box; transition: box-shadow 0.2s;
         }
         input::placeholder { color: var(--tg-hint); }
         input:focus { outline: none; box-shadow: 0 0 0 2px var(--tg-link); }
 
-        .list-container {
-            flex-grow: 1;
-            min-height: 0;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px; /* Space between cards */
-            padding-bottom: 5px; /* some breathing room at the bottom */
-        }
-
-        .list-item {
-            background-color: var(--tg-secondary-bg);
-            padding: 14px 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 17px;
-            transition: transform 0.15s ease;
-            flex-shrink: 0; /* Prevent items from shrinking */
-        }
-        .list-item:active {
-             transform: scale(0.98);
-        }
-        .list-item.selected { 
-            background-color: var(--tg-link);
-            color: var(--tg-button-text);
-            font-weight: 500;
-         }
-        .list-item.disabled { 
-            color: var(--tg-hint);
-            cursor: not-allowed;
-            background-color: color-mix(in srgb, var(--tg-secondary-bg), var(--tg-bg) 50%);
-        }
+        .list-container { flex-grow: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 5px; }
+        .list-item { background-color: var(--tg-secondary-bg); padding: 14px 18px; border-radius: 10px; cursor: pointer; font-size: 17px; transition: transform 0.15s ease; flex-shrink: 0; }
+        .list-item:active { transform: scale(0.98); }
+        .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); font-weight: 500; }
+        .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; background-color: color-mix(in srgb, var(--tg-secondary-bg), var(--tg-bg) 50%); }
 
         #summary-content { background: var(--tg-secondary-bg); padding: 20px; border-radius: 12px; }
         #summary-content p { margin: 0 0 12px; font-size: 16px; }
         #summary-content p:last-child { margin-bottom: 0; }
         #summary-content span { font-weight: 600; color: var(--tg-text); float: right; }
 
-        #step-progress { text-align: center; justify-content: center; }
-        #progress-header { font-size: 22px; margin-bottom: 15px; }
-        #progress-bar-container { background-color: var(--tg-secondary-bg); border-radius: 8px; overflow: hidden; height: 12px; margin: 25px 0; }
-        #progress-bar { width: 0%; height: 100%; background-image: var(--button-gradient); transition: width 0.3s; border-radius: 8px; }
-        #log-text, #progress-text { font-size: 15px; color: var(--tg-hint); }
-        #download-button {
-            display: inline-block;
+        /* --- New Progress/Result Styles --- */
+        #step-progress {
+            text-align: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .progress-container, .result-container {
+            background-color: var(--tg-secondary-bg);
+            border-radius: 18px;
+            padding: 25px;
+            width: 100%;
+            max-width: 400px; /* Limit width on larger screens */
+            margin: auto; /* Center it */
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        #progress-header, #result-header {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        #progress-bar-container {
+            background-color: var(--tg-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 12px;
+            margin: 25px 0;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
             background-image: var(--button-gradient);
+            transition: width 0.3s;
+            border-radius: 8px;
+        }
+
+        #log-text, #progress-text {
+            font-size: 15px;
+            color: var(--tg-hint);
+            min-height: 22px; /* Prevent layout shifts */
+        }
+        
+        #result-info p { 
+            font-size: 16px; 
+            color: var(--tg-text);
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        #result-info span { font-weight: 500; color: var(--tg-hint);}
+
+        .action-button {
+            display: inline-block;
             color: var(--tg-button-text);
-            padding: 15px 30px;
+            padding: 16px 30px;
             text-decoration: none;
             border-radius: 12px;
             margin-top: 30px;
             font-weight: 600;
             font-size: 17px;
             border: none;
-            box-shadow: var(--button-shadow);
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        #download-button {
+            background-image: var(--success-gradient);
+            box-shadow: var(--success-shadow);
         }
         #download-button:active { transform: scale(0.97); }
         .hidden { display: none; }
@@ -138,43 +147,30 @@
 <body>
 
 <div class="container">
-    <div id="step1" class="step active"> 
-        <h1>Шаг 1: ID Продавца</h1>
-        <div class="input-group"> 
-            <input type="text" id="seller-id" placeholder="Введите ID продавца"> 
-        </div>
-    </div>
-    <div id="step2" class="step">
-        <h1>Шаг 2: Категория</h1>
-        <input type="search" id="category-search" placeholder="Поиск категории...">
-        <div id="category-list" class="list-container"></div>
-    </div>
-    <div id="step3" class="step">
-        <h1>Шаг 3: Подкатегория</h1>
-        <input type="search" id="subcategory-search" placeholder="Поиск подкатегории...">
-        <div id="subcategory-list" class="list-container"></div>
-    </div>
-    <div id="step4" class="step">
-        <h1>Шаг 4: ID Бренда (опционально)</h1>
-        <div class="input-group">
-            <input type="text" id="brand-id" placeholder="Можно оставить пустым">
-        </div>
-    </div>
-    <div id="step5" class="step">
-        <h1>Шаг 5: Подтверждение</h1>
-        <div id="summary-content">
-            <p>Продавец: <span id="summary-seller-id"></span></p>
-            <p>Категория: <span id="summary-category"></span></p>
-            <p>Подкатегория: <span id="summary-subcategory"></span></p>
-            <p>Бренд: <span id="summary-brand-id"></span></p>
-        </div>
-    </div>
+    <!-- Steps 1-5 remain the same -->
+    <div id="step1" class="step active"> <h1>Шаг 1: ID Продавца</h1> <div class="input-group"> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div> </div>
+    <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск категории..."> <div id="category-list" class="list-container"></div> </div>
+    <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск подкатегории..."> <div id="subcategory-list" class="list-container"></div> </div>
+    <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опционально)</h1> <div class="input-group"> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div> </div>
+    <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"> <p>Продавец: <span id="summary-seller-id"></span></p> <p>Категория: <span id="summary-category"></span></p> <p>Подкатегория: <span id="summary-subcategory"></span></p> <p>Бренд: <span id="summary-brand-id"></span></p> </div> </div>
+    
+    <!-- New Progress/Result Step -->
     <div id="step-progress" class="step">
-        <h1 id="progress-header"></h1>
-        <div id="progress-bar-container"><div id="progress-bar"></div></div>
-        <p id="progress-text"></p>
-        <p id="log-text"></p>
-        <button id="download-button" class="hidden"></button>
+        <div id="progress-view" class="progress-container">
+            <h1 id="progress-header">Идет парсинг...</h1>
+            <div id="progress-bar-container"><div id="progress-bar"></div></div>
+            <p id="progress-text"></p>
+            <p id="log-text">Инициализация...</p>
+        </div>
+
+        <div id="result-view" class="result-container hidden">
+            <h1 id="result-header">Готово!</h1>
+            <div id="result-info">
+                <p><span>Продавец</span> <strong id="result-seller-name"></strong></p>
+                <p><span>Всего товаров</span> <strong id="result-total-items"></strong></p>
+            </div>
+            <button id="download-button" class="action-button">Скачать Excel</button>
+        </div>
     </div>
 </div>
 
@@ -184,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '' };
+    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '' };
     
     const ui = {
         steps: {
@@ -192,18 +188,22 @@ document.addEventListener('DOMContentLoaded', function() {
             3: document.getElementById('step3'), 4: document.getElementById('step4'),
             5: document.getElementById('step5'), progress: document.getElementById('step-progress')
         },
-        inputs: {
-            sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'),
-            categorySearch: document.getElementById('category-search'), subcategorySearch: document.getElementById('subcategory-search')
-        },
+        inputs: { sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'), categorySearch: document.getElementById('category-search'), subcategorySearch: document.getElementById('subcategory-search') },
         lists: { category: document.getElementById('category-list'), subcategory: document.getElementById('subcategory-list') },
-        summary: {
-            sellerId: document.getElementById('summary-seller-id'), brandId: document.getElementById('summary-brand-id'),
-            category: document.getElementById('summary-category'), subcategory: document.getElementById('summary-subcategory')
+        summary: { sellerId: document.getElementById('summary-seller-id'), brandId: document.getElementById('summary-brand-id'), category: document.getElementById('summary-category'), subcategory: document.getElementById('summary-subcategory') },
+        progressView: {
+            container: document.getElementById('progress-view'),
+            header: document.getElementById('progress-header'),
+            bar: document.getElementById('progress-bar'),
+            text: document.getElementById('progress-text'),
+            log: document.getElementById('log-text')
         },
-        progress: {
-            header: document.getElementById('progress-header'), bar: document.getElementById('progress-bar'),
-            text: document.getElementById('progress-text'), log: document.getElementById('log-text'),
+        resultView: {
+            container: document.getElementById('result-view'),
+            header: document.getElementById('result-header'),
+            info: document.getElementById('result-info'),
+            sellerName: document.getElementById('result-seller-name'),
+            totalItems: document.getElementById('result-total-items'),
             downloadBtn: document.getElementById('download-button')
         }
     };
@@ -223,8 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         switch(state.currentStep) {
             case 1: isEnabled = ui.inputs.sellerId.value.trim(); webApp.MainButton.setText(buttonText); break;
-            case 2: isEnabled = state.category; webApp.MainButton.setText(buttonText); break;
-            case 3: isEnabled = state.xsubjectId; webApp.MainButton.setText(buttonText); break;
+            case 2: isEnabled = !!state.category; webApp.MainButton.setText(buttonText); break;
+            case 3: isEnabled = !!state.xsubjectId; webApp.MainButton.setText(buttonText); break;
             case 4: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
             case 5: isEnabled = true; webApp.MainButton.setText(startText); break;
             default: webApp.MainButton.hide(); return;
@@ -253,11 +253,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     webApp.onEvent('backButtonClicked', () => {
         if (state.currentStep === 3) { 
-            state.subcategory = null;
-            state.xsubjectId = null;
+            state.subcategory = null; state.xsubjectId = null;
             selectItem('category', state.category); 
         }
-        goToStep(state.currentStep - 1)
+        goToStep(state.currentStep - 1);
     });
 
     Object.values(ui.inputs).forEach(el => el.addEventListener('input', updateMainButton));
@@ -265,19 +264,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const fetchCategories = async () => {
         try {
             const response = await fetch('/categories');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            if (data.error) throw new Error(data.error);
             state.categoriesData = data;
             renderList(ui.lists.category, Object.keys(state.categoriesData), 'category');
         } catch (e) {
             console.error("Ошибка загрузки категорий:", e.message);
-            const categoryList = document.getElementById('category-list');
-            categoryList.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-destructive);">Ошибка загрузки категорий: ${e.message}</div>`;
+            ui.lists.category.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-destructive);">Ошибка: ${e.message}</div>`;
         }
     };
 
@@ -287,12 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const filteredItems = itemKeys.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
 
         if (filteredItems.length === 0) {
-            const placeholder = document.createElement('div');
-            placeholder.textContent = 'Ничего не найдено';
-            placeholder.style.textAlign = 'center';
-            placeholder.style.padding = '20px';
-            placeholder.style.color = 'var(--tg-hint)';
-            element.appendChild(placeholder);
+            element.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-hint);">Ничего не найдено</div>`;
             return;
         }
 
@@ -326,12 +315,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const selectItem = (type, value, id = null) => {
         if (type === 'category') {
-            state.category = value; 
-            state.subcategory = null;
-            state.xsubjectId = null;
+            state.category = value; state.subcategory = null; state.xsubjectId = null;
         } else {
-            state.subcategory = value;
-            state.xsubjectId = id;
+            state.subcategory = value; state.xsubjectId = id;
         }
         document.querySelectorAll(`#${type}-list .list-item`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
         updateMainButton();
@@ -345,8 +331,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const startParsing = () => {
         goToStep('progress');
-        Object.values(ui.progress).forEach(el => el.classList.add('hidden'));
-        ui.progress.header.classList.remove('hidden');
+        ui.progressView.container.classList.remove('hidden');
+        ui.resultView.container.classList.add('hidden');
         
         const params = new URLSearchParams({ seller_id: state.sellerId });
         if (state.brandId) params.append('brand_id', state.brandId);
@@ -361,36 +347,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
         es.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            [ui.progress.bar.parentElement, ui.progress.text, ui.progress.log].forEach(el => el.classList.remove('hidden'));
 
             switch(data.type) {
-                case 'start': ui.progress.header.textContent = `Найдено: ${data.total} товаров`; ui.progress.log.textContent = data.message; break;
-                case 'progress':
-                    ui.progress.bar.style.width = `${(data.current / data.total) * 100}%`;
-                    ui.progress.text.textContent = `${data.current} / ${data.total}`;
-                    ui.progress.log.textContent = data.message;
+                case 'start': 
+                    state.sellerName = data.seller_name;
+                    ui.progressView.header.textContent = `Найдено: ${data.total} товаров`; 
                     break;
-                case 'log': ui.progress.log.textContent = data.message; break;
+                case 'progress':
+                    ui.progressView.bar.style.width = `${(data.current / data.total) * 100}%`;
+                    ui.progressView.text.textContent = `${data.current} / ${data.total}`;
+                    ui.progressView.log.textContent = data.message;
+                    break;
+                case 'log': ui.progressView.log.textContent = data.message; break;
                 case 'result':
-                    ui.progress.header.textContent = 'Готово!';
-                    ui.progress.log.textContent = 'Файл успешно создан.';
-                    ui.progress.downloadBtn.classList.remove('hidden');
-                    ui.progress.downloadBtn.textContent = `Скачать Excel`;
-                    ui.progress.downloadBtn.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
-                    es.close(); resetUI();
+                    ui.progressView.container.classList.add('hidden');
+                    ui.resultView.container.classList.remove('hidden');
+                    ui.resultView.sellerName.textContent = state.sellerName;
+                    ui.resultView.totalItems.textContent = state.totalItems; // This was missing, let's assume total is in state
+                    ui.resultView.downloadBtn.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
+                    es.close(); 
+                    resetUI();
                     break;
                 case 'error':
-                    ui.progress.header.textContent = 'Ошибка';
-                    ui.progress.log.textContent = data.message;
-                    ui.progress.log.style.color = 'var(--tg-destructive)';
-                    es.close(); resetUI();
+                    ui.progressView.container.classList.add('hidden');
+                    ui.resultView.container.classList.remove('hidden');
+                    ui.resultView.header.textContent = 'Ошибка';
+                    ui.resultView.info.innerHTML = `<p style="color: var(--tg-destructive);">${data.message}</p>`;
+                    es.close(); 
+                    resetUI();
                     break;
             }
         };
         es.onerror = () => { 
-            ui.progress.header.textContent = 'Ошибка сети';
-            ui.progress.log.textContent = 'Потеряно соединение с сервером.';
-            es.close(); resetUI();
+             ui.progressView.container.classList.add('hidden');
+             ui.resultView.container.classList.remove('hidden');
+             ui.resultView.header.textContent = 'Ошибка сети';
+             ui.resultView.info.innerHTML = `<p style="color: var(--tg-destructive);">Потеряно соединение с сервером.</p>`;
+            es.close(); 
+            resetUI();
         };
     };
 
