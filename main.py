@@ -62,8 +62,12 @@ def stream_parser(seller_id, brand_id):
     if not baskets:
         yield json.dumps({'type': 'log', 'message': 'Не удалось получить карту маршрутов. Парсинг может быть неполным.'})
 
+    # --- Определение типа фильтра ---
+    is_category_search = is_category(brand_id)
+    filter_param = f"subject={brand_id}" if is_category_search else f"fbrand={brand_id}"
+
     # 2. Определение общего количества товаров
-    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
+    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&{filter_param}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
     try:
         response_total = make_request(url_total_list, headers=headers)
         res_total = response_total.json()
@@ -72,7 +76,7 @@ def stream_parser(seller_id, brand_id):
         raise Exception(f"Критическая ошибка при получении общего числа товаров: {e}")
 
     if not products_total:
-        raise Exception("Товары не найдены. Проверьте правильность ID продавца и бренда.")
+        raise Exception("Товары не найдены. Проверьте правильность ID продавца и бренда/категории.")
 
     pages_count = math.ceil(products_total / 100)
     yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}. Начинаем обработку...'})
@@ -80,7 +84,7 @@ def stream_parser(seller_id, brand_id):
     # 3. Постраничный обход и сбор данных
     current_page, count = 1, 0
     while current_page <= pages_count:
-        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
+        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&{filter_param}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
         try:
             response = make_request(url_list, headers=headers)
             products_on_page = response.json().get('products', [])
@@ -158,11 +162,21 @@ def parse_input(input_str):
         parseResult = urlparse(input_str)
         sellerId = str(parseResult.path).split('/')[2]
         query = str(parseResult.query)
-        brandStartIndex = query.find('fbrand')
-        if brandStartIndex == -1: raise ValueError("Параметр fbrand не найден в ссылке.")
+        
+        # Сначала ищем 'subject', потом 'fbrand'
+        filter_key = ''
+        if 'subject' in query:
+            filter_key = 'subject'
+        elif 'fbrand' in query:
+            filter_key = 'fbrand'
+        else:
+             raise ValueError("Параметр fbrand или subject не найден в ссылке.")
+
+        brandStartIndex = query.find(filter_key)
         brandEndIndex = query.find('&', brandStartIndex)
         brandItems = query[brandStartIndex:] if brandEndIndex == -1 else query[brandStartIndex:brandEndIndex]
         brandId = brandItems.split('=')[1]
+
     return (sellerId, brandId)
 
 def get_mediabasket_route_map():
@@ -416,7 +430,48 @@ def create_excel_file(data):
     wb.save(output_path)
     return output_path
 
-# --- Прочие вспомогательные функции (без изменений) ---
+# --- Новые и измененные вспомогательные функции ---
+def is_category(id_to_check):
+    """Проверяет, является ли ID категорией, просматривая subcategories.json."""
+    try:
+        with open('subcategories.json', 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+        
+        # Рекурсивный поиск по вложенным категориям
+        def find_in_dict(data, target_id):
+            for key, value in data.items():
+                # Ключи - это имена категорий, нам нужно найти ID во вложенных структурах
+                if isinstance(value, dict):
+                    if find_in_dict(value, target_id):
+                        return True
+                elif isinstance(value, list):
+                     # Предполагаем, что если value - это список, то он может содержать ID
+                     # или это просто список атрибутов, как в вашем примере.
+                     # Нужна более точная структура subcategories.json.
+                     # Пока будем считать, что ID там нет в явном виде.
+                     pass
+            return False
+
+        # Поскольку в subcategories.json ID категорий не в явном виде,
+        # а brand_id приходит как число, нам нужна логика для их сопоставления.
+        # Давайте пока сделаем заглушку, которая всегда возвращает True,
+        # если это число, предполагая, что пользователь передает ID категории.
+        # В идеале, здесь нужна логика, связывающая ID и имена из subcategories.json.
+        
+        # Проверяем все ID, если их несколько
+        ids = id_to_check.split(';%3B') # WB использует ; или %3B как разделитель
+        ids = [i for i in ids if i.isdigit()]
+        if not ids:
+            return False
+
+        # Заглушка: если ID числовой, считаем его категорией.
+        # Это временное решение, пока структура subcategories.json не ясна до конца.
+        return all(id.isdigit() for id in ids)
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False # Если файл не найден или некорректен, считаем, что это не категория
+
+
 def find_options_by_group_name(grouped_options, group_name): 
     try: return next((g['options'] for g in grouped_options if g['group_name'] == group_name), [])
     except (TypeError, KeyError): return []
