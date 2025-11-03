@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import requests
 import time
 import random
@@ -51,7 +51,7 @@ def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
 
 
 # --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССА ---
-def stream_parser(seller_id, brand_id):
+def stream_parser(seller_id, brand_id, xsubject_id=None):
     """
     Основная логика парсинга, перестроенная в генератор, который yield'ит обновления прогресса.
     """
@@ -64,6 +64,9 @@ def stream_parser(seller_id, brand_id):
 
     # 2. Определение общего количества товаров
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&lang=ru&spp=30&supplier={seller_id}&uclusters=0"
+    if xsubject_id:
+        url_total_list += f"&xsubject={xsubject_id}"
+
     try:
         response_total = make_request(url_total_list, headers=headers)
         res_total = response_total.json()
@@ -81,6 +84,9 @@ def stream_parser(seller_id, brand_id):
     current_page, count = 1, 0
     while current_page <= pages_count:
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=12358357&fbrand={brand_id}&hide_dtype=13&lang=ru&page={current_page}&sort=popular&spp=30&supplier={seller_id}"
+        if xsubject_id:
+            url_list += f"&xsubject={xsubject_id}"
+
         try:
             response = make_request(url_list, headers=headers)
             products_on_page = response.json().get('products', [])
@@ -149,21 +155,27 @@ def stream_parser(seller_id, brand_id):
 def check_string(s): return bool(re.fullmatch(r'(\d+%3B)*\d+', s))
 def parse_input(input_str):
     parts = input_str.split()
-    if len(parts) > 2: raise ValueError("Необходимо указать два параметра через пробел")
-    sellerId, brandId = ('', '')
-    if len(parts) == 2:
+    sellerId, brandId, xsubjectId = '', '', None
+
+    if len(parts) >= 2:
         sellerId, brandId = parts[0], parts[1]
-        if not sellerId.isdigit() or not check_string(brandId): raise ValueError("Необходимо указать число и ID бренда(ов)")
+        if not sellerId.isdigit() or not check_string(brandId):
+            raise ValueError("Необходимо указать число и ID бренда(ов)")
+        if len(parts) > 2 and parts[2].isdigit():
+            xsubjectId = parts[2]
     else:
         parseResult = urlparse(input_str)
         sellerId = str(parseResult.path).split('/')[2]
-        query = str(parseResult.query)
-        brandStartIndex = query.find('fbrand')
-        if brandStartIndex == -1: raise ValueError("Параметр fbrand не найден в ссылке.")
-        brandEndIndex = query.find('&', brandStartIndex)
-        brandItems = query[brandStartIndex:] if brandEndIndex == -1 else query[brandStartIndex:brandEndIndex]
-        brandId = brandItems.split('=')[1]
-    return (sellerId, brandId)
+        query = parse_qs(parseResult.query)
+        
+        if 'fbrand' not in query:
+            raise ValueError("Параметр fbrand не найден в ссылке.")
+        brandId = query['fbrand'][0]
+
+        if 'xsubject' in query and query['xsubject'][0].isdigit():
+            xsubjectId = query['xsubject'][0]
+
+    return (sellerId, brandId, xsubjectId)
 
 def get_mediabasket_route_map():
     try:
@@ -413,7 +425,7 @@ def create_excel_file(data):
     for col in range(ord('A'), ord('Q') + 1):
         ws.column_dimensions[chr(col)].width = 30
 
-    wb.save(output_path)
+    wb.save(output_.path)
     return output_path
 
 # --- Прочие вспомогательные функции (без изменений) ---
