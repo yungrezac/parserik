@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '' };
+    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '' };
     
     const ui = {
         steps: {
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         switch(state.currentStep) {
             case 1: isEnabled = ui.inputs.sellerId.value.trim(); webApp.MainButton.setText(buttonText); break;
             case 2: isEnabled = state.category; webApp.MainButton.setText(buttonText); break;
-            case 3: isEnabled = state.subcategory; webApp.MainButton.setText(buttonText); break;
+            case 3: isEnabled = state.xsubjectId; webApp.MainButton.setText(buttonText); break;
             case 4: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
             case 5: isEnabled = true; webApp.MainButton.setText(startText); break;
             default: webApp.MainButton.hide(); return;
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.onEvent('mainButtonClicked', () => {
         switch(state.currentStep) {
             case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
-            case 2: renderList(ui.lists.subcategory, Object.keys(state.categoriesData[state.category]), 'subcategory'); goToStep(3); break;
+            case 2: renderList(ui.lists.subcategory, state.categoriesData[state.category], 'subcategory'); goToStep(3); break;
             case 3: goToStep(4); break;
             case 4: 
                 state.brandId = ui.inputs.brandId.value.trim();
@@ -253,9 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     webApp.onEvent('backButtonClicked', () => {
         if (state.currentStep === 3) { 
-            // when going back from subcategory, clear selection
             state.subcategory = null;
-            selectItem('category', state.category); // re-select to update UI
+            state.xsubjectId = null;
+            selectItem('category', state.category); 
         }
         goToStep(state.currentStep - 1)
     });
@@ -272,7 +272,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const renderList = (element, items, type, filter = '') => {
         element.innerHTML = '';
-        const filteredItems = items.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
+        const itemKeys = (type === 'category' ? items : Object.keys(items || {}));
+        const filteredItems = itemKeys.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
 
         if (filteredItems.length === 0) {
             const placeholder = document.createElement('div');
@@ -286,13 +287,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         filteredItems.forEach(item => {
             let isDisabled = false, title = '';
+            let subcatId = null;
             if (type === 'category') {
                 isDisabled = Object.keys(state.categoriesData[item] || {}).length === 0;
                 title = 'Нет подкатегорий';
             } else if (type === 'subcategory') {
-                const cols = state.categoriesData[state.category]?.[item];
-                isDisabled = !Array.isArray(cols) || cols.length === 0;
-                title = 'Нет столбцов для парсинга';
+                subcatId = items[item];
+                isDisabled = !subcatId;
+                title = 'Парсинг для этой подкатегории не настроен';
             }
             const el = document.createElement('div');
             el.className = 'list-item';
@@ -302,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.classList.add('disabled');
                 el.title = title;
             } else {
-                el.onclick = () => selectItem(type, item);
+                el.onclick = () => selectItem(type, item, subcatId);
             }
             if ((type === 'category' && state.category === item) || (type === 'subcategory' && state.subcategory === item)) {
                 el.classList.add('selected');
@@ -311,11 +313,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    const selectItem = (type, value) => {
+    const selectItem = (type, value, id = null) => {
         if (type === 'category') {
-            state.category = value; state.subcategory = null;
+            state.category = value; 
+            state.subcategory = null;
+            state.xsubjectId = null;
         } else {
             state.subcategory = value;
+            state.xsubjectId = id;
         }
         document.querySelectorAll(`#${type}-list .list-item`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
         updateMainButton();
@@ -324,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ui.inputs.categorySearch.addEventListener('input', (e) => renderList(ui.lists.category, Object.keys(state.categoriesData), 'category', e.target.value));
     ui.inputs.subcategorySearch.addEventListener('input', (e) => {
         if (!state.category) return;
-        renderList(ui.lists.subcategory, Object.keys(state.categoriesData[state.category]), 'subcategory', e.target.value);
+        renderList(ui.lists.subcategory, state.categoriesData[state.category], 'subcategory', e.target.value);
     });
 
     const startParsing = () => {
@@ -332,8 +337,9 @@ document.addEventListener('DOMContentLoaded', function() {
         Object.values(ui.progress).forEach(el => el.classList.add('hidden'));
         ui.progress.header.classList.remove('hidden');
         
-        const params = new URLSearchParams({ seller_id: state.sellerId, category: state.category, subcategory: state.subcategory });
+        const params = new URLSearchParams({ seller_id: state.sellerId });
         if (state.brandId) params.append('brand_id', state.brandId);
+        if (state.xsubjectId) params.append('xsubject_id', state.xsubjectId);
 
         const es = new EventSource(`/stream?${params.toString()}`);
         const resetUI = () => {
