@@ -81,9 +81,22 @@ def download_file(filename):
     except FileNotFoundError:
         return "Файл не найден.", 404
 
-# --- Логика парсинга (взята из main.py) ---
+# --- Логика парсинга ---
 def stream_parser(seller_id, brand_id, xsubject_id=None):
     all_products = []
+    
+    yield json.dumps({'type': 'log', 'message': 'Получение информации о продавце...'})
+    seller_name = "Не найден"
+    try:
+        seller_page_url = f"https://www.wildberries.ru/seller/{seller_id}"
+        seller_page_res = make_request(seller_page_url, headers=headers)
+        seller_page_html = seller_page_res.text
+        match = re.search(r'<h2 class="seller-details__title">([^<]+)</h2>', seller_page_html)
+        if match:
+            seller_name = match.group(1).strip()
+    except Exception:
+        yield json.dumps({'type': 'log', 'message': 'Не удалось получить имя продавца со страницы.'})
+
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
     baskets = get_mediabasket_route_map()
     if not baskets:
@@ -95,17 +108,7 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
     
     try:
         res_total = make_request(url_total_list, headers=headers).json()
-        data = res_total.get('data', {})
-        products_total = data.get('total', 0)
-        
-        seller_name = "Не найден"
-        filters = data.get('filters')
-        if filters:
-            for f in filters:
-                if f.get('id') == 'fsupplier':
-                    if f.get('values') and len(f.get('values')) > 0:
-                        seller_name = f['values'][0].get('name', "Не найден")
-                    break
+        products_total = res_total.get('data', {}).get('total', 0)
     except Exception as e:
         raise Exception(f"Ошибка при получении общего числа товаров: {e}")
 
@@ -157,7 +160,7 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
         raise Exception("Не удалось создать Excel-файл.")
 
     download_filename = os.path.basename(output_path)
-    yield json.dumps({'type': 'result', 'download_filename': download_filename})
+    yield json.dumps({'type': 'result', 'download_filename': download_filename, 'total': products_total})
 
 def get_columns_for_subcategory(xsubject_id):
     if not xsubject_id:
