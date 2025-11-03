@@ -68,8 +68,10 @@
 
         /* --- New Progress/Result Styles --- */
         #step-progress {
+            display: flex;
+            align-items: center; /* Vertical centering */
+            justify-content: center; /* Horizontal centering */
             text-align: center;
-            justify-content: center;
             padding: 20px;
             box-sizing: border-box;
         }
@@ -79,9 +81,11 @@
             border-radius: 18px;
             padding: 25px;
             width: 100%;
-            max-width: 400px; /* Limit width on larger screens */
-            margin: auto; /* Center it */
+            max-width: 400px; /* Limit width */
+            margin: 0 auto; /* Ensure centering within the flex container */
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
         }
 
         #progress-header, #result-header {
@@ -118,8 +122,10 @@
             margin: 10px 0;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
-        #result-info span { font-weight: 500; color: var(--tg-hint);}
+        #result-info span { font-weight: 500; color: var(--tg-hint); text-align: left;}
+        #result-info strong { text-align: right; }
 
         .action-button {
             display: inline-block;
@@ -180,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '' };
+    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '', totalItems: 0 };
     
     const ui = {
         steps: {
@@ -351,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             switch(data.type) {
                 case 'start': 
                     state.sellerName = data.seller_name;
+                    state.totalItems = data.total;
                     ui.progressView.header.textContent = `Найдено: ${data.total} товаров`; 
                     break;
                 case 'progress':
@@ -363,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ui.progressView.container.classList.add('hidden');
                     ui.resultView.container.classList.remove('hidden');
                     ui.resultView.sellerName.textContent = state.sellerName;
-                    ui.resultView.totalItems.textContent = state.totalItems; // This was missing, let's assume total is in state
+                    ui.resultView.totalItems.textContent = data.total;
                     ui.resultView.downloadBtn.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
                     es.close(); 
                     resetUI();
