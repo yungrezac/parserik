@@ -16,11 +16,6 @@ from flask import Flask, render_template, request, send_from_directory, Response
 app = Flask(__name__, static_folder='public', template_folder='public')
 port = int(os.environ.get('PORT', 5000))
 
-# --- Глобальный кэш для меню ---
-category_menu_cache = None
-cache_timestamp = 0
-CACHE_DURATION = 3600  # 1 час
-
 # --- Заголовки для запросов ---
 headers = {
     'Accept': '*/*',
@@ -42,46 +37,35 @@ def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
             response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response
-        except requests.exceptions.RequestException:
-            time.sleep(backoff_factor * (2 ** i) + random.uniform(0, 1))
+        except requests.exceptions.RequestException as e:
+            # Для сетевых ошибок или кодов состояния, не равных 2xx
+            if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 429:
+                 # Особая обработка для Too Many Requests
+                sleep_time = backoff_factor * (2 ** i) + random.uniform(0, 1)
+                time.sleep(sleep_time)
+                continue
+            # Для других ошибок просто попробуем еще раз
+            time.sleep(backoff_factor * (2 ** i))
             continue
     raise Exception(f"Не удалось получить данные после {retries} попыток. URL: {url}")
 
-def get_wb_category_menu():
-    """Получает и кэширует полное меню категорий с Wildberries."""
-    global category_menu_cache, cache_timestamp
-    current_time = time.time()
-
-    if category_menu_cache and (current_time - cache_timestamp < CACHE_DURATION):
-        return category_menu_cache
-
+def find_subject_id_from_seller_filters(seller_id, subcategory_name):
+    """Находит ID категории (subject) через фильтры продавца."""
+    url = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}&lang=ru"
     try:
-        url = "https://www.wildberries.ru/webapi/menu/main-menu-ru-ru.json"
         response = make_request(url, headers)
-        category_menu_cache = response.json()
-        cache_timestamp = current_time
-        return category_menu_cache
-    except Exception as e:
-        # В случае ошибки, если есть старый кэш, вернем его
-        if category_menu_cache:
-            return category_menu_cache
-        raise Exception(f"Не удалось получить меню категорий: {e}")
+        filters = response.json().get('data', {}).get('filters', [])
+        
+        # Ищем блок фильтров по категориям
+        for f in filters:
+            if f.get('id') == 'subject':
+                for category in f.get('items', []):
+                    if category.get('name') == subcategory_name:
+                        return category.get('id')
+        return None
+    except Exception:
+        return None
 
-def find_subject_id_by_name(menu, target_name):
-    """Рекурсивно ищет ID подкатегории (subject) по ее имени в меню."""
-    if isinstance(menu, list):
-        for item in menu:
-            result = find_subject_id_by_name(item, target_name)
-            if result: return result
-    elif isinstance(menu, dict):
-        # Проверяем, соответствует ли имя текущего узла
-        if menu.get('name') == target_name and 'id' in menu:
-            return menu['id']
-        # Рекурсивно ищем в дочерних элементах
-        if 'childs' in menu:
-            result = find_subject_id_by_name(menu['childs'], target_name)
-            if result: return result
-    return None
 
 # --- Маршруты API ---
 @app.route('/')
@@ -108,17 +92,16 @@ def stream_run():
 
     def generate():
         try:
-            # 1. Получаем меню и ищем ID подкатегории
-            yield json.dumps({"type": "log", "message": "Получение меню категорий WB..."})
-            wb_menu = get_wb_category_menu()
-            subject_id = find_subject_id_by_name(wb_menu, subcategory_name)
+            # 1. Ищем ID подкатегории через фильтры продавца
+            yield json.dumps({"type": "log", "message": f"Поиск ID для подкатегории '{subcategory_name}' у продавца {seller_id}..."})
+            subject_id = find_subject_id_from_seller_filters(seller_id, subcategory_name)
 
             if not subject_id:
-                error_msg = f"Не удалось найти ID для подкатегории '{subcategory_name}'."
+                error_msg = f"Не удалось найти ID для '{subcategory_name}' у данного продавца. Возможно, у него нет товаров в этой категории."
                 yield json.dumps({"type": "error", "message": error_msg})
                 return
 
-            yield json.dumps({"type": "log", "message": f"Найден ID для '{subcategory_name}': {subject_id}"})
+            yield json.dumps({"type": "log", "message": f"Найден ID: {subject_id}. Начинаем парсинг..."})
 
             # 2. Получаем столбцы для Excel из subcategories.json
             with open('subcategories.json', 'r', encoding='utf-8') as f:
@@ -152,12 +135,10 @@ def download_file(filename):
 # --- Основная логика парсинга ---
 def stream_parser(seller_id, subject_id, columns):
     all_products = []
-    yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов корзин...'}) 
+    yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов корзин...'})
     baskets = get_mediabasket_route_map()
 
-    # --- URL теперь использует subject для фильтрации ---
     filter_query = f"subject={subject_id}"
-    
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&{filter_query}&supplier={seller_id}&lang=ru&spp=30"
     
     try:
@@ -170,7 +151,7 @@ def stream_parser(seller_id, subject_id, columns):
         raise Exception("Товары в данной категории у продавца не найдены.")
 
     pages_count = math.ceil(products_total / 100)
-    yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}. Обработка...'}) 
+    yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}. Обработка...'})
 
     count = 0
     for page_num in range(1, pages_count + 1):
@@ -184,9 +165,8 @@ def stream_parser(seller_id, subject_id, columns):
 
         for item in products_on_page:
             count += 1
-            yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')}) 
+            yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')})
             
-            # (Блок получения детальной информации о товаре оставлен без изменений)
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             backetNumber, isAutoServer = 1, bool(backetName)
@@ -206,16 +186,16 @@ def stream_parser(seller_id, subject_id, columns):
 
         time.sleep(random.uniform(0.5, 1.0))
 
-    yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'}) 
+    yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'})
     mapped_data = map_data(all_products, columns)
 
-    yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'}) 
+    yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
     output_path = create_excel_file(mapped_data, columns, subcategory_name)
     if not output_path:
         raise Exception("Не удалось создать Excel-файл.")
 
     download_filename = os.path.basename(output_path)
-    yield json.dumps({'type': 'result', 'download_filename': download_filename}) 
+    yield json.dumps({'type': 'result', 'download_filename': download_filename})
 
 # --- Вспомогательные функции для обработки данных и Excel ---
 def get_mediabasket_route_map():
@@ -227,29 +207,30 @@ def get_mediabasket_route_map():
 def get_host_by_range(val, route_map):
     if not isinstance(route_map, list): return ''
     for host in route_map: 
-        if host.get('vol_range_from') <= val <= host.get('vol_range_to'): return host.get('host')
+        if 'vol_range_from' in host and 'vol_range_to' in host and host['vol_range_from'] <= val <= host['vol_range_to']: 
+            return host['host']
     return ''
 
 def map_data(data, columns):
-    # (Функция map_data оставлена без существенных изменений, 
-    # т.к. она зависит от переданных `columns`)
-    master_mapping = {
-        'Артикул продавца': lambda item, adv: item.get('vendorCode', ''),
-        'Бренд': lambda item, adv: item.get('brand', ''),
-        'Наименование': lambda item, adv: item.get('name', ''),
-        'Описание': lambda item, adv: adv.get('description', ''),
-        'Состав': lambda item, adv: find_value_in_options(adv.get('options', []), 'Состав'),
-        'Страна производства': lambda item, adv: find_value_in_options(adv.get('options', []), 'Страна производства'),
-        'Комплектация': lambda item, adv: find_value_in_options(adv.get('options', []), 'Комплектация'),
-        'ТНВЭД': lambda item, adv: find_value_in_options(adv.get('options', []), 'ТН ВЭД'),
-    }
     new_data = []
     for item in data:
         advanced = item.get('advanced', {})
         row_data = {}
+        # Динамическое сопоставление на основе списка столбцов
         for col_name in columns:
-            # Простое сопоставление по имени столбца
-            row_data[col_name] = find_value_in_options(advanced.get('options', []), col_name)
+            # Сначала ищем в базовой информации о товаре
+            if col_name == 'Артикул продавца':
+                row_data[col_name] = item.get('vendorCode', '')
+            elif col_name == 'Бренд':
+                row_data[col_name] = item.get('brand', '')
+            elif col_name == 'Наименование':
+                row_data[col_name] = item.get('name', '')
+            # Затем ищем в расширенной информации (включая 'options')
+            elif col_name == 'Описание':
+                row_data[col_name] = advanced.get('description', '')
+            else:
+                # Общий поиск в 'options' для всех остальных полей
+                row_data[col_name] = find_value_in_options(advanced.get('options', []), col_name)
         new_data.append(row_data)
     return new_data
 
@@ -271,7 +252,7 @@ def create_excel_file(data, columns, subcategory_name):
     ws = wb.active
     ws.title = safe_subcategory_name
     
-    header_style = NamedStyle(name="header_style_v2")
+    header_style = NamedStyle(name="header_style_v3")
     header_style.fill = PatternFill(start_color="9A41FE", end_color="9A41FE", fill_type="solid")
     header_style.font = Font(name='Calibri', size=12, bold=True, color="FFFFFF")
     header_style.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
@@ -289,7 +270,11 @@ def create_excel_file(data, columns, subcategory_name):
         max_length = 0
         column_letter = col[0].column_letter
         for cell in col:
-            max_length = max(max_length, len(str(cell.value)))
+            try: # Улавливаем возможные ошибки, если значение не строка
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
         adjusted_width = (max_length + 2) if max_length < 45 else 45
         ws.column_dimensions[column_letter].width = adjusted_width
 
