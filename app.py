@@ -62,7 +62,6 @@ def stream_run():
 
     def generate():
         try:
-            # brand_id и xsubject_id опциональны, передаем их в парсер
             for progress_update in stream_parser(seller_id, brand_id, xsubject_id):
                 yield f"data: {progress_update}\n\n"
                 time.sleep(0.05)
@@ -90,15 +89,23 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
     if not baskets:
         yield json.dumps({'type': 'log', 'message': 'Не удалось получить карту маршрутов.'})
 
-    # Динамическое формирование URL
     brand_query = f"&fbrand={brand_id}" if brand_id else ""
     xsubject_query = f"&xsubject={xsubject_id}" if xsubject_id else ""
-
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}{xsubject_query}&lang=ru&spp=30&uclusters=0"
     
     try:
         res_total = make_request(url_total_list, headers=headers).json()
-        products_total = res_total.get('data', {}).get('total', 0)
+        data = res_total.get('data', {})
+        products_total = data.get('total', 0)
+        
+        seller_name = "Не найден"
+        filters = data.get('filters')
+        if filters:
+            for f in filters:
+                if f.get('id') == 'fsupplier':
+                    if f.get('values') and len(f.get('values')) > 0:
+                        seller_name = f['values'][0].get('name', "Не найден")
+                    break
     except Exception as e:
         raise Exception(f"Ошибка при получении общего числа товаров: {e}")
 
@@ -106,7 +113,7 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
         raise Exception("Товары не найдены. Проверьте ID продавца, бренда или подкатегории.")
 
     pages_count = math.ceil(products_total / 100)
-    yield json.dumps({'type': 'start', 'total': products_total, 'message': f'Найдено товаров: {products_total}.'})
+    yield json.dumps({'type': 'start', 'total': products_total, 'seller_name': seller_name, 'message': f'Найдено товаров: {products_total}.'})
 
     count = 0
     for page_num in range(1, pages_count + 1):
@@ -139,11 +146,10 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
 
         time.sleep(random.uniform(0.5, 1.5))
 
-    # Определение колонок для Excel на основе подкатегории
     columns = get_columns_for_subcategory(xsubject_id)
 
     yield json.dumps({'type': 'log', 'message': 'Формирование таблицы...'})
-    mapped_data = map_data(all_products, columns) # Теперь передаем динамические колонки
+    mapped_data = map_data(all_products, columns)
 
     yield json.dumps({'type': 'log', 'message': 'Создание Excel-файла...'})
     output_path = create_excel_file(mapped_data, columns)
@@ -236,7 +242,7 @@ def create_excel_file(data, columns):
     header_style.alignment = Alignment(horizontal='center', vertical='center')
     wb.add_named_style(header_style)
     
-    if columns: # Только если колонки определены
+    if columns:
         ws.append(columns)
         for cell in ws[1]:
             cell.style = header_style
