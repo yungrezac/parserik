@@ -18,7 +18,6 @@
             --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
 
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
-            --button-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
             --success-gradient: linear-gradient(135deg, #34c759, #28a745);
             --success-shadow: 0 4px 15px rgba(52, 199, 89, 0.4);
         }
@@ -61,41 +60,31 @@
         .list-item.selected { background-color: var(--tg-link); color: var(--tg-button-text); font-weight: 500; }
         .list-item.disabled { color: var(--tg-hint); cursor: not-allowed; background-color: color-mix(in srgb, var(--tg-secondary-bg), var(--tg-bg) 50%); }
 
-        #summary-content { background: var(--tg-secondary-bg); padding: 20px; border-radius: 12px; }
-        #summary-content p { margin: 0 0 12px; font-size: 16px; }
-        #summary-content p:last-child { margin-bottom: 0; }
-        #summary-content span { font-weight: 600; color: var(--tg-text); float: right; }
-
-        /* --- New Progress/Result Styles --- */
-        #step-progress {
-            /* This inherits display: none/flex from .step and .step.active */
-            align-items: center; /* Vertical centering */
-            justify-content: center; /* Horizontal centering */
-            text-align: center;
+        #summary-content, #result-info {
+            background: var(--tg-secondary-bg);
             padding: 20px;
-            box-sizing: border-box;
+            border-radius: 12px;
+        }
+        #summary-content p, #result-info p { margin: 0 0 12px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        #summary-content p:last-child, #result-info p:last-child { margin-bottom: 0; }
+        #summary-content span, #result-info span { font-weight: 600; color: var(--tg-text); text-align: right; }
+        #result-info span { font-weight: 500; color: var(--tg-hint); text-align: left; }
+        #result-info strong { text-align: right; }
+
+        #step-progress {
+            justify-content: center; /* Center content vertically in this step */
         }
 
-        .progress-container, .result-container {
-            background-color: var(--tg-secondary-bg);
-            border-radius: 18px;
-            padding: 25px;
-            width: 100%;
-            max-width: 400px; /* Limit width */
-            margin: 0 auto; /* Ensure centering within the flex container */
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
+        #progress-view, #result-view { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            text-align: center;
         }
-
-        #progress-header, #result-header {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
+        #progress-view h1, #result-view h1 { margin-top: auto; } /* Push content to center */
 
         #progress-bar-container {
-            background-color: var(--tg-bg);
+            background-color: var(--tg-secondary-bg);
             border-radius: 8px;
             overflow: hidden;
             height: 12px;
@@ -113,23 +102,13 @@
         #log-text, #progress-text {
             font-size: 15px;
             color: var(--tg-hint);
-            min-height: 22px; /* Prevent layout shifts */
+            min-height: 22px;
+            margin-bottom: auto; /* Push content to center */
         }
         
-        #result-info p { 
-            font-size: 16px; 
-            color: var(--tg-text);
-            margin: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        #result-info span { font-weight: 500; color: var(--tg-hint); text-align: left;}
-        #result-info strong { text-align: right; }
-
         .action-button {
-            display: inline-block;
-            color: var(--tg-button-text);
+            display: block;
+            color: var(--tg-button-text) !important; /* important to override tg styles */
             padding: 16px 30px;
             text-decoration: none;
             border-radius: 12px;
@@ -140,42 +119,49 @@
             transition: transform 0.2s, box-shadow 0.2s;
             width: 100%;
             box-sizing: border-box;
-        }
-        
-        #download-button {
             background-image: var(--success-gradient);
             box-shadow: var(--success-shadow);
         }
-        #download-button:active { transform: scale(0.97); }
-        .hidden { display: none; }
+        .action-button:active { transform: scale(0.97); }
+        .hidden { display: none !important; } /* Use important to ensure override */
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Steps 1-5 remain the same -->
+    <!-- Steps 1-4 remain the same -->
     <div id="step1" class="step active"> <h1>Шаг 1: ID Продавца</h1> <div class="input-group"> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div> </div>
     <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск категории..."> <div id="category-list" class="list-container"></div> </div>
     <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск подкатегории..."> <div id="subcategory-list" class="list-container"></div> </div>
     <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опционально)</h1> <div class="input-group"> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div> </div>
-    <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"> <p>Продавец: <span id="summary-seller-id"></span></p> <p>Категория: <span id="summary-category"></span></p> <p>Подкатегория: <span id="summary-subcategory"></span></p> <p>Бренд: <span id="summary-brand-id"></span></p> </div> </div>
     
-    <!-- New Progress/Result Step -->
+    <!-- Step 5: Confirmation -->
+    <div id="step5" class="step"> 
+        <h1>Шаг 5: Подтверждение</h1> 
+        <div id="summary-content"> 
+            <p>Продавец ID: <span id="summary-seller-id"></span></p> 
+            <p>Категория: <span id="summary-category"></span></p> 
+            <p>Подкатегория: <span id="summary-subcategory"></span></p> 
+            <p>Бренд ID: <span id="summary-brand-id"></span></p> 
+        </div> 
+    </div>
+    
+    <!-- Step 6: Progress/Result -->
     <div id="step-progress" class="step">
-        <div id="progress-view" class="progress-container">
+        <div id="progress-view">
             <h1 id="progress-header">Идет парсинг...</h1>
             <div id="progress-bar-container"><div id="progress-bar"></div></div>
             <p id="progress-text"></p>
             <p id="log-text">Инициализация...</p>
         </div>
 
-        <div id="result-view" class="result-container hidden">
-            <h1 id="result-header">Готово!</h1>
+        <div id="result-view" class="hidden">
+            <h1>Готово!</h1>
             <div id="result-info">
                 <p><span>Продавец</span> <strong id="result-seller-name"></strong></p>
                 <p><span>Всего товаров</span> <strong id="result-total-items"></strong></p>
             </div>
-            <button id="download-button" class="action-button">Скачать Excel</button>
+            <a id="download-button" class="action-button">Скачать Excel</a>
         </div>
     </div>
 </div>
@@ -206,8 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         resultView: {
             container: document.getElementById('result-view'),
-            header: document.getElementById('result-header'),
-            info: document.getElementById('result-info'),
+            infoBox: document.getElementById('result-info'),
             sellerName: document.getElementById('result-seller-name'),
             totalItems: document.getElementById('result-total-items'),
             downloadBtn: document.getElementById('download-button')
@@ -363,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'progress':
                     ui.progressView.bar.style.width = `${(data.current / data.total) * 100}%`;
                     ui.progressView.text.textContent = `${data.current} / ${data.total}`;
-                    ui.progressView.log.textContent = data.message;
+                    ui.progressView.log.textContent = `Парсинг: ${data.message}`;
                     break;
                 case 'log': ui.progressView.log.textContent = data.message; break;
                 case 'result':
@@ -371,25 +356,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     ui.resultView.container.classList.remove('hidden');
                     ui.resultView.sellerName.textContent = state.sellerName;
                     ui.resultView.totalItems.textContent = data.total;
-                    ui.resultView.downloadBtn.onclick = () => webApp.openLink(`/download/${data.download_filename}`);
+                    ui.resultView.downloadBtn.href = `/download/${data.download_filename}`;
+                    ui.resultView.downloadBtn.onclick = () => webApp.openLink(ui.resultView.downloadBtn.href);
                     es.close(); 
                     resetUI();
                     break;
                 case 'error':
                     ui.progressView.container.classList.add('hidden');
                     ui.resultView.container.classList.remove('hidden');
-                    ui.resultView.header.textContent = 'Ошибка';
-                    ui.resultView.info.innerHTML = `<p style="color: var(--tg-destructive);">${data.message}</p>`;
+                    ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">${data.message}</p>`;
+                    document.getElementById('result-header').textContent = 'Ошибка';
+                    ui.resultView.downloadBtn.classList.add('hidden');
                     es.close(); 
                     resetUI();
                     break;
             }
         };
+
         es.onerror = () => { 
-             ui.progressView.container.classList.add('hidden');
-             ui.resultView.container.classList.remove('hidden');
-             ui.resultView.header.textContent = 'Ошибка сети';
-             ui.resultView.info.innerHTML = `<p style="color: var(--tg-destructive);">Потеряно соединение с сервером.</p>`;
+            ui.progressView.container.classList.add('hidden');
+            ui.resultView.container.classList.remove('hidden');
+            ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">Потеряно соединение с сервером.</p>`;
+            document.getElementById('result-header').textContent = 'Ошибка сети';
+            ui.resultView.downloadBtn.classList.add('hidden');
             es.close(); 
             resetUI();
         };
