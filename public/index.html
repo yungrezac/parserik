@@ -123,10 +123,59 @@
             box-shadow: var(--success-shadow);
         }
         .action-button:active { transform: scale(0.97); }
-        .hidden { display: none !important; } /* Use important to ensure override */
+        .hidden { display: none !important; }
+
+        #profile-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-size: cover;
+            cursor: pointer;
+        }
+
+        #profile-page {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+        }
+
+        .subscription-card {
+            background-color: var(--tg-secondary-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+            width: 80%;
+        }
+
+        .subscription-card h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .subscription-card p {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .subscribe-button {
+            background-color: var(--tg-button);
+            color: var(--tg-button-text);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+
+<div id="profile-icon"></div>
 
 <div class="container">
     <!-- Steps 1-4 remain the same -->
@@ -166,6 +215,15 @@
     </div>
 </div>
 
+<div id="profile-page">
+    <h1>Профиль</h1>
+    <div class="subscription-card">
+        <h2>Платная подписка</h2>
+        <p>Получите доступ к расширенным функциям, оформив платную подписку.</p>
+        <button class="subscribe-button">Оформить подписку</button>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const webApp = window.Telegram.WebApp;
@@ -196,7 +254,10 @@ document.addEventListener('DOMContentLoaded', function() {
             sellerName: document.getElementById('result-seller-name'),
             totalItems: document.getElementById('result-total-items'),
             downloadBtn: document.getElementById('download-button')
-        }
+        },
+        profileIcon: document.getElementById('profile-icon'),
+        profilePage: document.getElementById('profile-page'),
+        container: document.querySelector('.container')
     };
 
     const goToStep = (step) => {
@@ -243,11 +304,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     webApp.onEvent('backButtonClicked', () => {
-        if (state.currentStep === 3) { 
+        if (ui.profilePage.style.display === 'flex') {
+            ui.profilePage.style.display = 'none';
+            ui.container.style.display = 'flex';
+            webApp.BackButton.hide();
+        } else if (state.currentStep === 3) { 
             state.subcategory = null; state.xsubjectId = null;
             selectItem('category', state.category); 
+            goToStep(state.currentStep - 1);
+        } else {
+            goToStep(state.currentStep - 1);
         }
-        goToStep(state.currentStep - 1);
     });
 
     Object.values(ui.inputs).forEach(el => el.addEventListener('input', updateMainButton));
@@ -383,6 +450,16 @@ document.addEventListener('DOMContentLoaded', function() {
             resetUI();
         };
     };
+
+    if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.photo_url) {
+        ui.profileIcon.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
+    }
+
+    ui.profileIcon.addEventListener('click', () => {
+        ui.container.style.display = 'none';
+        ui.profilePage.style.display = 'flex';
+        webApp.BackButton.show();
+    });
 
     fetchCategories();
     updateMainButton();
