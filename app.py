@@ -138,9 +138,9 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
                 except requests.exceptions.RequestException: item['advanced'] = {}; break
             
             all_products.append(item)
-            time.sleep(random.uniform(0.05, 0.2))
+            time.sleep(random.uniform(0.1, 0.3))
 
-        time.sleep(random.uniform(0.5, 1.5))
+        time.sleep(random.uniform(1, 2))
 
     columns = get_columns_for_subcategory(xsubject_id)
 
