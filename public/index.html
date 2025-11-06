@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -71,7 +70,9 @@
         #result-info span { font-weight: 500; color: var(--tg-hint); text-align: left; }
         #result-info strong { text-align: right; }
 
-        #step-progress { justify-content: center; }
+        #step-progress {
+            justify-content: center; /* Center content vertically in this step */
+        }
 
         #progress-view, #result-view { 
             width: 100%; 
@@ -79,7 +80,7 @@
             flex-direction: column; 
             text-align: center;
         }
-        #progress-view h1, #result-view h1 { margin-top: auto; }
+        #progress-view h1, #result-view h1 { margin-top: auto; } /* Push content to center */
 
         #progress-bar-container {
             background-color: var(--tg-secondary-bg);
@@ -101,12 +102,12 @@
             font-size: 15px;
             color: var(--tg-hint);
             min-height: 22px;
-            margin-bottom: auto;
+            margin-bottom: auto; /* Push content to center */
         }
         
         .action-button {
             display: block;
-            color: var(--tg-button-text) !important;
+            color: var(--tg-button-text) !important; /* important to override tg styles */
             padding: 16px 30px;
             text-decoration: none;
             border-radius: 12px;
@@ -132,107 +133,68 @@
             border-radius: 50%;
             background-size: cover;
             cursor: pointer;
-            z-index: 100;
         }
 
         #profile-page {
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Center content vertically */
-            padding-top: 20px;
-            flex-grow: 1;
-        }
-        
-        #profile-card {
-            background-color: transparent; /* Make card transparent */
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            width: 100%;
-            max-width: 350px; /* Set a max-width for the card */
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-sizing: border-box;
-        }
-        #profile-img {
-            width: 120px; /* Increased size */
-            height: 120px; /* Increased size */
-            border-radius: 50%;
-            margin-bottom: 20px; /* Increased margin */
-            border: 4px solid var(--tg-link); /* Thicker border */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        #profile-name {
-            font-size: 26px; /* Larger font size */
-            font-weight: 700; /* Bolder */
-            margin: 0;
-        }
-        #profile-username {
-            font-size: 18px; /* Larger font size */
-            color: var(--tg-hint);
-            margin: 8px 0 0; /* Adjusted margin */
-        }
-        #profile-id {
-            font-size: 14px;
-            color: var(--tg-hint);
-            margin-top: 15px;
+            padding-top: 50px;
         }
 
         .subscription-card {
-            background: linear-gradient(135deg, color-mix(in srgb, var(--tg-link) 90%, black), color-mix(in srgb, var(--tg-link) 60%, black));
-            padding: 25px;
-            border-radius: 15px; /* Smoother corners */
+            background-color: var(--tg-secondary-bg);
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
             margin-top: 20px;
-            width: 100%;
-            max-width: 350px;
-            box-sizing: border-box;
-            color: #ffffff;
-            box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
+            width: 80%;
         }
 
         .subscription-card h2 {
-            font-size: 22px;
-            margin-bottom: 12px;
-            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 10px;
         }
+
         .subscription-card p {
             font-size: 16px;
-            margin-bottom: 25px;
-            opacity: 0.9;
+            margin-bottom: 20px;
         }
 
         .subscribe-button {
-            background-color: #ffffff;
-            color: var(--tg-link);
-            padding: 12px 25px;
+            background-color: var(--tg-button);
+            color: var(--tg-button-text);
+            padding: 10px 20px;
             border: none;
-            border-radius: 10px;
-            font-size: 17px;
-            font-weight: 600;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s, color 0.2s;
         }
-        .subscribe-button:hover {
-            background-color: #f0f0f0;
-        }
-
     </style>
 </head>
 <body>
 
 <div id="profile-icon"></div>
 
-<div class="container active">
+<div class="container">
+    <!-- Steps 1-4 remain the same -->
     <div id="step1" class="step active"> <h1>Шаг 1: ID Продавца</h1> <div class="input-group"> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div> </div>
     <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск категории..."> <div id="category-list" class="list-container"></div> </div>
     <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск подкатегории..."> <div id="subcategory-list" class="list-container"></div> </div>
     <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опционально)</h1> <div class="input-group"> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div> </div>
-    <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"> <p>Продавец ID: <span id="summary-seller-id"></span></p> <p>Категория: <span id="summary-category"></span></p> <p>Подкатегория: <span id="summary-subcategory"></span></p> <p>Бренд ID: <span id="summary-brand-id"></span></p> </div> </div>
+    
+    <!-- Step 5: Confirmation -->
+    <div id="step5" class="step"> 
+        <h1>Шаг 5: Подтверждение</h1> 
+        <div id="summary-content"> 
+            <p>Продавец ID: <span id="summary-seller-id"></span></p> 
+            <p>Категория: <span id="summary-category"></span></p> 
+            <p>Подкатегория: <span id="summary-subcategory"></span></p> 
+            <p>Бренд ID: <span id="summary-brand-id"></span></p> 
+        </div> 
+    </div>
+    
+    <!-- Step 6: Progress/Result -->
     <div id="step-progress" class="step">
         <div id="progress-view">
             <h1 id="progress-header">Идет парсинг...</h1>
@@ -240,6 +202,7 @@
             <p id="progress-text"></p>
             <p id="log-text">Инициализация...</p>
         </div>
+
         <div id="result-view" class="hidden">
             <h1>Готово!</h1>
             <div id="result-info">
@@ -251,17 +214,12 @@
     </div>
 </div>
 
-<div id="profile-page" class="step">
-    <div id="profile-card">
-        <img id="profile-img" src="" alt="User photo">
-        <h1 id="profile-name"></h1>
-        <p id="profile-username"></p>
-        <p id="profile-id"></p>
-    </div>
+<div id="profile-page">
+    <h1>Профиль</h1>
     <div class="subscription-card">
-        <h2>Premium-Доступ</h2>
-        <p>Получите доступ к эксклюзивным функциям и аналитике.</p>
-        <button class="subscribe-button">Оформить подписку ($1.99)</button>
+        <h2>Платная подписка</h2>
+        <p>Получите доступ к расширенным функциям, оформив платную подписку.</p>
+        <button class="subscribe-button">Оформить подписку</button>
     </div>
 </div>
 
@@ -271,15 +229,13 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '', totalItems: 0, isProfileOpen: false };
+    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '', totalItems: 0 };
     
     const ui = {
-        container: document.querySelector('.container'),
         steps: {
             1: document.getElementById('step1'), 2: document.getElementById('step2'),
             3: document.getElementById('step3'), 4: document.getElementById('step4'),
-            5: document.getElementById('step5'), progress: document.getElementById('step-progress'),
-            profile: document.getElementById('profile-page')
+            5: document.getElementById('step5'), progress: document.getElementById('step-progress')
         },
         inputs: { sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'), categorySearch: document.getElementById('category-search'), subcategorySearch: document.getElementById('subcategory-search') },
         lists: { category: document.getElementById('category-list'), subcategory: document.getElementById('subcategory-list') },
@@ -298,39 +254,21 @@ document.addEventListener('DOMContentLoaded', function() {
             totalItems: document.getElementById('result-total-items'),
             downloadBtn: document.getElementById('download-button')
         },
-        profile: {
-            icon: document.getElementById('profile-icon'),
-            img: document.getElementById('profile-img'),
-            name: document.getElementById('profile-name'),
-            username: document.getElementById('profile-username'),
-            id: document.getElementById('profile-id')
-        }
+        profileIcon: document.getElementById('profile-icon'),
+        profilePage: document.getElementById('profile-page'),
+        container: document.querySelector('.container')
     };
 
-    const showScreen = (screenName) => {
-        // screenName can be 'main' or 'profile'
-        state.isProfileOpen = (screenName === 'profile');
-        ui.container.classList.toggle('active', !state.isProfileOpen);
-        ui.steps.profile.classList.toggle('active', state.isProfileOpen);
-        updateMainButton(); // Main button might need to be hidden/shown
-        state.isProfileOpen ? webApp.BackButton.show() : webApp.BackButton.hide();
-    };
-    
     const goToStep = (step) => {
-        if (!ui.steps[step] || state.isProfileOpen) return;
+        if (!ui.steps[step]) return;
         state.currentStep = step;
-        document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
+        Object.values(ui.steps).forEach(s => s.classList.remove('active'));
         ui.steps[step].classList.add('active');
         updateMainButton();
         step > 1 && step !== 'progress' ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
-        if (state.isProfileOpen) {
-            webApp.MainButton.hide();
-            return;
-        }
-        
         const buttonText = 'Далее', skipText = 'Пропустить', startText = 'Запустить';
         let isEnabled = false;
 
@@ -348,7 +286,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     webApp.onEvent('mainButtonClicked', () => {
-        if (state.isProfileOpen) return;
         switch(state.currentStep) {
             case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
             case 2: renderList(ui.lists.subcategory, state.categoriesData[state.category], 'subcategory'); goToStep(3); break;
@@ -366,13 +303,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     webApp.onEvent('backButtonClicked', () => {
-        if (state.isProfileOpen) {
-            showScreen('main');
+        if (ui.profilePage.style.display === 'flex') {
+            ui.profilePage.style.display = 'none';
+            ui.container.style.display = 'flex';
+            webApp.BackButton.hide();
+        } else if (state.currentStep === 3) { 
+            state.subcategory = null; state.xsubjectId = null;
+            selectItem('category', state.category); 
+            goToStep(state.currentStep - 1);
         } else {
-            if (state.currentStep === 3) { 
-                state.subcategory = null; state.xsubjectId = null;
-                selectItem('category', state.category); 
-            }
             goToStep(state.currentStep - 1);
         }
     });
@@ -382,14 +321,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const fetchCategories = async () => {
         try {
             const response = await fetch('/categories');
-            if (!response.ok) throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             const data = await response.json();
             if (data.error) throw new Error(data.error);
             state.categoriesData = data;
             renderList(ui.lists.category, Object.keys(state.categoriesData), 'category');
         } catch (e) {
             console.error("Ошибка загрузки категорий:", e.message);
-            ui.lists.category.innerHTML = \`<div style="text-align: center; padding: 20px; color: var(--tg-destructive);">Ошибка: \${e.message}</div>\`;
+            ui.lists.category.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-destructive);">Ошибка: ${e.message}</div>`;
         }
     };
 
@@ -399,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const filteredItems = itemKeys.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
 
         if (filteredItems.length === 0) {
-            element.innerHTML = \`<div style="text-align: center; padding: 20px; color: var(--tg-hint);">Ничего не найдено</div>\`;
+            element.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--tg-hint);">Ничего не найдено</div>`;
             return;
         }
 
@@ -430,14 +369,14 @@ document.addEventListener('DOMContentLoaded', function() {
             element.appendChild(el);
         });
     };
-    
+
     const selectItem = (type, value, id = null) => {
         if (type === 'category') {
             state.category = value; state.subcategory = null; state.xsubjectId = null;
         } else {
             state.subcategory = value; state.xsubjectId = id;
         }
-        document.querySelectorAll(\`#\${type}-list .list-item\`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
+        document.querySelectorAll(`#${type}-list .list-item`).forEach(c => c.classList.toggle('selected', c.dataset.id === value));
         updateMainButton();
     };
 
@@ -456,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (state.brandId) params.append('brand_id', state.brandId);
         if (state.xsubjectId) params.append('xsubject_id', state.xsubjectId);
 
-        const es = new EventSource(\`/stream?\${params.toString()}\`);
+        const es = new EventSource(`/stream?${params.toString()}`);
         const resetUI = () => {
             webApp.MainButton.setText('Начать заново').show().enable();
             webApp.MainButton.onClick(() => window.location.reload());
@@ -465,16 +404,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         es.onmessage = (e) => {
             const data = JSON.parse(e.data);
+
             switch(data.type) {
                 case 'start': 
                     state.sellerName = data.seller_name;
                     state.totalItems = data.total;
-                    ui.progressView.header.textContent = \`Найдено: \${data.total} товаров\`; 
+                    ui.progressView.header.textContent = `Найдено: ${data.total} товаров`; 
                     break;
                 case 'progress':
-                    ui.progressView.bar.style.width = \`\${(data.current / data.total) * 100}%\`;
-                    ui.progressView.text.textContent = \`\${data.current} / \${data.total}\`;
-                    ui.progressView.log.textContent = \`Парсинг: \${data.message}\`;
+                    ui.progressView.bar.style.width = `${(data.current / data.total) * 100}%`;
+                    ui.progressView.text.textContent = `${data.current} / ${data.total}`;
+                    ui.progressView.log.textContent = `Парсинг: ${data.message}`;
                     break;
                 case 'log': ui.progressView.log.textContent = data.message; break;
                 case 'result':
@@ -482,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ui.resultView.container.classList.remove('hidden');
                     ui.resultView.sellerName.textContent = state.sellerName;
                     ui.resultView.totalItems.textContent = data.total;
-                    ui.resultView.downloadBtn.href = \`/download/\${data.download_filename}\`;
+                    ui.resultView.downloadBtn.href = `/download/${data.download_filename}`;
                     ui.resultView.downloadBtn.onclick = () => webApp.openLink(ui.resultView.downloadBtn.href);
                     es.close(); 
                     resetUI();
@@ -490,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'error':
                     ui.progressView.container.classList.add('hidden');
                     ui.resultView.container.classList.remove('hidden');
-                    ui.resultView.infoBox.innerHTML = \`<p style="color: var(--tg-destructive); text-align: center;">\${data.message}</p>\`;
+                    ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">${data.message}</p>`;
                     document.getElementById('result-header').textContent = 'Ошибка';
                     ui.resultView.downloadBtn.classList.add('hidden');
                     es.close(); 
@@ -502,34 +442,26 @@ document.addEventListener('DOMContentLoaded', function() {
         es.onerror = () => { 
             ui.progressView.container.classList.add('hidden');
             ui.resultView.container.classList.remove('hidden');
-            ui.resultView.infoBox.innerHTML = \`<p style="color: var(--tg-destructive); text-align: center;">Потеряно соединение с сервером.</p>\`;
+            ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">Потеряно соединение с сервером.</p>`;
             document.getElementById('result-header').textContent = 'Ошибка сети';
             ui.resultView.downloadBtn.classList.add('hidden');
             es.close(); 
             resetUI();
         };
     };
-    
-    const renderProfile = (user) => {
-        if (!user) return;
-        const userPhoto = user.photo_url || 'https://via.placeholder.com/120'; // Placeholder
-        ui.profile.icon.style.backgroundImage = \`url(\${userPhoto})\`;
-        ui.profile.img.src = userPhoto;
-        ui.profile.name.textContent = \`\${user.first_name || ''} \${user.last_name || ''}\`.trim() || 'Anonymous User';
-        ui.profile.username.textContent = user.username ? \`@\${user.username}\` : 'No username';
-        ui.profile.id.textContent = \`ID: \${user.id}\`;
+
+    if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.photo_url) {
+        ui.profileIcon.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
     }
 
-    ui.profile.icon.addEventListener('click', () => {
-        showScreen('profile');
+    ui.profileIcon.addEventListener('click', () => {
+        ui.container.style.display = 'none';
+        ui.profilePage.style.display = 'flex';
+        webApp.BackButton.show();
     });
 
-    // Initial setup
-    renderProfile(webApp.initDataUnsafe.user);
     fetchCategories();
-    showScreen('main'); // Start on the main screen
-    goToStep(1);
-
+    updateMainButton();
 });
 </script>
 
