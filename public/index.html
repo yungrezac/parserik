@@ -70,9 +70,7 @@
         #result-info span { font-weight: 500; color: var(--tg-hint); text-align: left; }
         #result-info strong { text-align: right; }
 
-        #step-progress {
-            justify-content: center; /* Center content vertically in this step */
-        }
+        #step-progress { justify-content: center; }
 
         #progress-view, #result-view { 
             width: 100%; 
@@ -80,7 +78,7 @@
             flex-direction: column; 
             text-align: center;
         }
-        #progress-view h1, #result-view h1 { margin-top: auto; } /* Push content to center */
+        #progress-view h1, #result-view h1 { margin-top: auto; }
 
         #progress-bar-container {
             background-color: var(--tg-secondary-bg);
@@ -102,12 +100,12 @@
             font-size: 15px;
             color: var(--tg-hint);
             min-height: 22px;
-            margin-bottom: auto; /* Push content to center */
+            margin-bottom: auto;
         }
         
         .action-button {
             display: block;
-            color: var(--tg-button-text) !important; /* important to override tg styles */
+            color: var(--tg-button-text) !important;
             padding: 16px 30px;
             text-decoration: none;
             border-radius: 12px;
@@ -124,6 +122,7 @@
         .action-button:active { transform: scale(0.97); }
         .hidden { display: none !important; }
 
+        /* Profile Icon */
         #profile-icon {
             position: absolute;
             top: 10px;
@@ -133,68 +132,268 @@
             border-radius: 50%;
             background-size: cover;
             cursor: pointer;
+            z-index: 100;
         }
 
+        /* Plan Button */
+        #plan-button {
+            position: absolute;
+            top: 10px;
+            right: 60px;
+            background: var(--tg-link);
+            color: var(--tg-button-text);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Profile Page */
         #profile-page {
             display: none;
             flex-direction: column;
             align-items: center;
-            padding-top: 50px;
+            justify-content: center;
+            padding-top: 20px;
+            flex-grow: 1;
+        }
+        
+        #profile-card {
+            background-color: transparent;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        #profile-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            border: 4px solid var(--tg-link);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        #profile-name {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0;
+        }
+        #profile-username {
+            font-size: 18px;
+            color: var(--tg-hint);
+            margin: 8px 0 0;
+        }
+        #profile-id {
+            font-size: 14px;
+            color: var(--tg-hint);
+            margin-top: 15px;
         }
 
+        /* Subscription Card */
         .subscription-card {
-            background-color: var(--tg-secondary-bg);
-            padding: 20px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--tg-link) 90%, black), color-mix(in srgb, var(--tg-link) 60%, black));
+            padding: 25px;
+            border-radius: 15px;
             text-align: center;
             margin-top: 20px;
-            width: 80%;
+            width: 100%;
+            max-width: 350px;
+            box-sizing: border-box;
+            color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
         }
 
         .subscription-card h2 {
-            font-size: 20px;
-            margin-bottom: 10px;
+            font-size: 22px;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
-
         .subscription-card p {
             font-size: 16px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            opacity: 0.9;
         }
 
         .subscribe-button {
-            background-color: var(--tg-button);
-            color: var(--tg-button-text);
-            padding: 10px 20px;
+            background-color: #ffffff;
+            color: var(--tg-link);
+            padding: 12px 25px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
             cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .subscribe-button:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Modal Overlay */
+        #plan-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #plan-modal-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Plan Modal */
+        #plan-modal {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--tg-bg);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 25px;
+            box-sizing: border-box;
+            z-index: 1001;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        #plan-modal.active {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--tg-hint);
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .plan-option {
+            background-color: var(--tg-secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .plan-option:active {
+            transform: scale(0.98);
+        }
+
+        .plan-option.selected {
+            border: 2px solid var(--tg-link);
+        }
+
+        .plan-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .plan-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--tg-link);
+            margin-bottom: 5px;
+        }
+
+        .plan-description {
+            font-size: 14px;
+            color: var(--tg-hint);
+            margin-bottom: 15px;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .plan-features li {
+            padding: 5px 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .plan-features li:before {
+            content: "✓";
+            color: var(--tg-link);
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .modal-action-button {
+            background-color: var(--tg-link);
+            color: var(--tg-button-text);
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .modal-action-button:active {
+            transform: scale(0.97);
         }
     </style>
 </head>
 <body>
 
 <div id="profile-icon"></div>
+<button id="plan-button">Тариф</button>
 
-<div class="container">
-    <!-- Steps 1-4 remain the same -->
+<div class="container active">
     <div id="step1" class="step active"> <h1>Шаг 1: ID Продавца</h1> <div class="input-group"> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div> </div>
     <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск категории..."> <div id="category-list" class="list-container"></div> </div>
     <div id="step3" class="step"> <h1>Шаг 3: Подкатегория</h1> <input type="search" id="subcategory-search" placeholder="Поиск подкатегории..."> <div id="subcategory-list" class="list-container"></div> </div>
     <div id="step4" class="step"> <h1>Шаг 4: ID Бренда (опционально)</h1> <div class="input-group"> <input type="text" id="brand-id" placeholder="Можно оставить пустым"> </div> </div>
-    
-    <!-- Step 5: Confirmation -->
-    <div id="step5" class="step"> 
-        <h1>Шаг 5: Подтверждение</h1> 
-        <div id="summary-content"> 
-            <p>Продавец ID: <span id="summary-seller-id"></span></p> 
-            <p>Категория: <span id="summary-category"></span></p> 
-            <p>Подкатегория: <span id="summary-subcategory"></span></p> 
-            <p>Бренд ID: <span id="summary-brand-id"></span></p> 
-        </div> 
-    </div>
-    
-    <!-- Step 6: Progress/Result -->
+    <div id="step5" class="step"> <h1>Шаг 5: Подтверждение</h1> <div id="summary-content"> <p>Продавец ID: <span id="summary-seller-id"></span></p> <p>Категория: <span id="summary-category"></span></p> <p>Подкатегория: <span id="summary-subcategory"></span></p> <p>Бренд ID: <span id="summary-brand-id"></span></p> </div> </div>
     <div id="step-progress" class="step">
         <div id="progress-view">
             <h1 id="progress-header">Идет парсинг...</h1>
@@ -202,7 +401,6 @@
             <p id="progress-text"></p>
             <p id="log-text">Инициализация...</p>
         </div>
-
         <div id="result-view" class="hidden">
             <h1>Готово!</h1>
             <div id="result-info">
@@ -214,13 +412,64 @@
     </div>
 </div>
 
-<div id="profile-page">
-    <h1>Профиль</h1>
-    <div class="subscription-card">
-        <h2>Платная подписка</h2>
-        <p>Получите доступ к расширенным функциям, оформив платную подписку.</p>
-        <button class="subscribe-button">Оформить подписку</button>
+<div id="profile-page" class="step">
+    <div id="profile-card">
+        <img id="profile-img" src="" alt="User photo">
+        <h1 id="profile-name"></h1>
+        <p id="profile-username"></p>
+        <p id="profile-id"></p>
     </div>
+    <div class="subscription-card">
+        <h2>Premium-Доступ</h2>
+        <p>Получите доступ к эксклюзивным функциям и аналитике.</p>
+        <button class="subscribe-button" id="profile-plan-button">Оформить подписку ($1.99)</button>
+    </div>
+</div>
+
+<!-- Plan Modal -->
+<div id="plan-modal-overlay"></div>
+<div id="plan-modal">
+    <div class="modal-header">
+        <h2 class="modal-title">Выберите тарифный план</h2>
+        <button class="close-button" id="close-plan-modal">✕</button>
+    </div>
+    
+    <div class="plan-option selected" data-plan="basic">
+        <div class="plan-name">Базовый</div>
+        <div class="plan-price">$0.99/мес</div>
+        <div class="plan-description">Для начинающих продавцов</div>
+        <ul class="plan-features">
+            <li>До 100 товаров в день</li>
+            <li>Базовая аналитика</li>
+            <li>Экспорт в Excel</li>
+        </ul>
+    </div>
+    
+    <div class="plan-option" data-plan="premium">
+        <div class="plan-name">Премиум</div>
+        <div class="plan-price">$1.99/мес</div>
+        <div class="plan-description">Для профессиональных продавцов</div>
+        <ul class="plan-features">
+            <li>До 1000 товаров в день</li>
+            <li>Расширенная аналитика</li>
+            <li>Приоритетная поддержка</li>
+            <li>Автоматическое обновление данных</li>
+        </ul>
+    </div>
+    
+    <div class="plan-option" data-plan="business">
+        <div class="plan-name">Бизнес</div>
+        <div class="plan-price">$4.99/мес</div>
+        <div class="plan-description">Для крупных компаний</div>
+        <ul class="plan-features">
+            <li>Неограниченное количество товаров</li>
+            <li>Полная аналитика и отчеты</li>
+            <li>API доступ</li>
+            <li>Персональный менеджер</li>
+        </ul>
+    </div>
+    
+    <button class="modal-action-button" id="select-plan-button">Выбрать тариф</button>
 </div>
 
 <script>
@@ -229,17 +478,47 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
-    const state = { currentStep: 1, categoriesData: {}, sellerId: '', brandId: '', category: '', subcategory: '', xsubjectId: '', sellerName: '', totalItems: 0 };
+    const state = { 
+        currentStep: 1, 
+        categoriesData: {}, 
+        sellerId: '', 
+        brandId: '', 
+        category: '', 
+        subcategory: '', 
+        xsubjectId: '', 
+        sellerName: '', 
+        totalItems: 0, 
+        isProfileOpen: false,
+        selectedPlan: 'basic'
+    };
     
     const ui = {
+        container: document.querySelector('.container'),
         steps: {
-            1: document.getElementById('step1'), 2: document.getElementById('step2'),
-            3: document.getElementById('step3'), 4: document.getElementById('step4'),
-            5: document.getElementById('step5'), progress: document.getElementById('step-progress')
+            1: document.getElementById('step1'), 
+            2: document.getElementById('step2'),
+            3: document.getElementById('step3'), 
+            4: document.getElementById('step4'),
+            5: document.getElementById('step5'), 
+            progress: document.getElementById('step-progress'),
+            profile: document.getElementById('profile-page')
         },
-        inputs: { sellerId: document.getElementById('seller-id'), brandId: document.getElementById('brand-id'), categorySearch: document.getElementById('category-search'), subcategorySearch: document.getElementById('subcategory-search') },
-        lists: { category: document.getElementById('category-list'), subcategory: document.getElementById('subcategory-list') },
-        summary: { sellerId: document.getElementById('summary-seller-id'), brandId: document.getElementById('summary-brand-id'), category: document.getElementById('summary-category'), subcategory: document.getElementById('summary-subcategory') },
+        inputs: { 
+            sellerId: document.getElementById('seller-id'), 
+            brandId: document.getElementById('brand-id'), 
+            categorySearch: document.getElementById('category-search'), 
+            subcategorySearch: document.getElementById('subcategory-search') 
+        },
+        lists: { 
+            category: document.getElementById('category-list'), 
+            subcategory: document.getElementById('subcategory-list') 
+        },
+        summary: { 
+            sellerId: document.getElementById('summary-seller-id'), 
+            brandId: document.getElementById('summary-brand-id'), 
+            category: document.getElementById('summary-category'), 
+            subcategory: document.getElementById('summary-subcategory') 
+        },
         progressView: {
             container: document.getElementById('progress-view'),
             header: document.getElementById('progress-header'),
@@ -254,21 +533,84 @@ document.addEventListener('DOMContentLoaded', function() {
             totalItems: document.getElementById('result-total-items'),
             downloadBtn: document.getElementById('download-button')
         },
-        profileIcon: document.getElementById('profile-icon'),
-        profilePage: document.getElementById('profile-page'),
-        container: document.querySelector('.container')
+        profile: {
+            icon: document.getElementById('profile-icon'),
+            img: document.getElementById('profile-img'),
+            name: document.getElementById('profile-name'),
+            username: document.getElementById('profile-username'),
+            id: document.getElementById('profile-id')
+        },
+        plan: {
+            button: document.getElementById('plan-button'),
+            profileButton: document.getElementById('profile-plan-button'),
+            modal: document.getElementById('plan-modal'),
+            overlay: document.getElementById('plan-modal-overlay'),
+            closeButton: document.getElementById('close-plan-modal'),
+            selectButton: document.getElementById('select-plan-button'),
+            options: document.querySelectorAll('.plan-option')
+        }
     };
 
+    // Plan Modal Functions
+    const openPlanModal = () => {
+        ui.plan.modal.classList.add('active');
+        ui.plan.overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closePlanModal = () => {
+        ui.plan.modal.classList.remove('active');
+        ui.plan.overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    const selectPlan = (plan) => {
+        state.selectedPlan = plan;
+        ui.plan.options.forEach(option => {
+            option.classList.toggle('selected', option.dataset.plan === plan);
+        });
+    };
+
+    // Event Listeners for Plan Modal
+    ui.plan.button.addEventListener('click', openPlanModal);
+    ui.plan.profileButton.addEventListener('click', openPlanModal);
+    ui.plan.closeButton.addEventListener('click', closePlanModal);
+    ui.plan.overlay.addEventListener('click', closePlanModal);
+    
+    ui.plan.options.forEach(option => {
+        option.addEventListener('click', () => selectPlan(option.dataset.plan));
+    });
+    
+    ui.plan.selectButton.addEventListener('click', () => {
+        // Here you would typically process the payment
+        alert(`Вы выбрали тариф: ${state.selectedPlan}`);
+        closePlanModal();
+    });
+
+    const showScreen = (screenName) => {
+        // screenName can be 'main' or 'profile'
+        state.isProfileOpen = (screenName === 'profile');
+        ui.container.classList.toggle('active', !state.isProfileOpen);
+        ui.steps.profile.classList.toggle('active', state.isProfileOpen);
+        updateMainButton(); // Main button might need to be hidden/shown
+        state.isProfileOpen ? webApp.BackButton.show() : webApp.BackButton.hide();
+    };
+    
     const goToStep = (step) => {
-        if (!ui.steps[step]) return;
+        if (!ui.steps[step] || state.isProfileOpen) return;
         state.currentStep = step;
-        Object.values(ui.steps).forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
         ui.steps[step].classList.add('active');
         updateMainButton();
         step > 1 && step !== 'progress' ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
+        if (state.isProfileOpen) {
+            webApp.MainButton.hide();
+            return;
+        }
+        
         const buttonText = 'Далее', skipText = 'Пропустить', startText = 'Запустить';
         let isEnabled = false;
 
@@ -286,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     webApp.onEvent('mainButtonClicked', () => {
+        if (state.isProfileOpen) return;
         switch(state.currentStep) {
             case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
             case 2: renderList(ui.lists.subcategory, state.categoriesData[state.category], 'subcategory'); goToStep(3); break;
@@ -303,15 +646,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     webApp.onEvent('backButtonClicked', () => {
-        if (ui.profilePage.style.display === 'flex') {
-            ui.profilePage.style.display = 'none';
-            ui.container.style.display = 'flex';
-            webApp.BackButton.hide();
-        } else if (state.currentStep === 3) { 
-            state.subcategory = null; state.xsubjectId = null;
-            selectItem('category', state.category); 
-            goToStep(state.currentStep - 1);
+        if (state.isProfileOpen) {
+            showScreen('main');
         } else {
+            if (state.currentStep === 3) { 
+                state.subcategory = null; state.xsubjectId = null;
+                selectItem('category', state.category); 
+            }
             goToStep(state.currentStep - 1);
         }
     });
@@ -369,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
             element.appendChild(el);
         });
     };
-
+    
     const selectItem = (type, value, id = null) => {
         if (type === 'category') {
             state.category = value; state.subcategory = null; state.xsubjectId = null;
@@ -404,7 +745,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         es.onmessage = (e) => {
             const data = JSON.parse(e.data);
-
             switch(data.type) {
                 case 'start': 
                     state.sellerName = data.seller_name;
@@ -449,19 +789,27 @@ document.addEventListener('DOMContentLoaded', function() {
             resetUI();
         };
     };
-
-    if (webApp.initDataUnsafe && webApp.initDataUnsafe.user && webApp.initDataUnsafe.user.photo_url) {
-        ui.profileIcon.style.backgroundImage = `url(${webApp.initDataUnsafe.user.photo_url})`;
+    
+    const renderProfile = (user) => {
+        if (!user) return;
+        const userPhoto = user.photo_url || 'https://via.placeholder.com/120'; // Placeholder
+        ui.profile.icon.style.backgroundImage = `url(${userPhoto})`;
+        ui.profile.img.src = userPhoto;
+        ui.profile.name.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Anonymous User';
+        ui.profile.username.textContent = user.username ? `@${user.username}` : 'No username';
+        ui.profile.id.textContent = `ID: ${user.id}`;
     }
 
-    ui.profileIcon.addEventListener('click', () => {
-        ui.container.style.display = 'none';
-        ui.profilePage.style.display = 'flex';
-        webApp.BackButton.show();
+    ui.profile.icon.addEventListener('click', () => {
+        showScreen('profile');
     });
 
+    // Initial setup
+    renderProfile(webApp.initDataUnsafe.user);
     fetchCategories();
-    updateMainButton();
+    showScreen('main'); // Start on the main screen
+    goToStep(1);
+
 });
 </script>
 
