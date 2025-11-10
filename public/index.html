@@ -150,6 +150,7 @@
             cursor: pointer;
             z-index: 100;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none; /* Скрыта по умолчанию */
         }
 
         /* Profile Page */
@@ -592,6 +593,10 @@ document.addEventListener('DOMContentLoaded', function() {
         state.isProfileOpen = (screenName === 'profile');
         ui.container.classList.toggle('active', !state.isProfileOpen);
         ui.steps.profile.classList.toggle('active', state.isProfileOpen);
+        
+        // Показываем или скрываем кнопку "Тариф" в зависимости от экрана
+        ui.plan.button.style.display = state.isProfileOpen ? 'block' : 'none';
+        
         updateMainButton(); // Main button might need to be hidden/shown
         state.isProfileOpen ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
