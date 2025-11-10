@@ -135,7 +135,7 @@
             z-index: 100;
         }
 
-        /* Plan Button */
+        /* Plan Button - теперь только на странице профиля */
         #plan-button {
             position: absolute;
             top: 10px;
@@ -158,8 +158,8 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding-top: 20px;
+            justify-content: flex-start;
+            padding-top: 60px; /* Отступ сверху для кнопки тарифа */
             flex-grow: 1;
         }
         
@@ -591,13 +591,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const showScreen = (screenName) => {
         // screenName can be 'main' or 'profile'
         state.isProfileOpen = (screenName === 'profile');
-        ui.container.classList.toggle('active', !state.isProfileOpen);
-        ui.steps.profile.classList.toggle('active', state.isProfileOpen);
         
-        // Показываем или скрываем кнопку "Тариф" в зависимости от экрана
-        ui.plan.button.style.display = state.isProfileOpen ? 'block' : 'none';
+        // Скрываем все шаги
+        document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
         
-        updateMainButton(); // Main button might need to be hidden/shown
+        if (state.isProfileOpen) {
+            // Показываем страницу профиля
+            ui.steps.profile.classList.add('active');
+            // Показываем кнопку "Тариф" только на странице профиля
+            ui.plan.button.style.display = 'block';
+        } else {
+            // Показываем главный контейнер с текущим шагом
+            ui.container.classList.add('active');
+            ui.steps[state.currentStep].classList.add('active');
+            // Скрываем кнопку "Тариф" на главном экране
+            ui.plan.button.style.display = 'none';
+        }
+        
+        updateMainButton();
         state.isProfileOpen ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
     
