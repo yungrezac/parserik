@@ -122,7 +122,6 @@
         .action-button:active { transform: scale(0.97); }
         .hidden { display: none !important; }
 
-        /* Profile Icon */
         #profile-icon {
             position: absolute;
             top: 10px;
@@ -135,7 +134,6 @@
             z-index: 100;
         }
 
-        /* Plan Button - теперь только на странице профиля */
         #plan-button {
             position: absolute;
             top: 10px;
@@ -150,282 +148,50 @@
             cursor: pointer;
             z-index: 100;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            display: none; /* Скрыта по умолчанию */
+            display: none; 
         }
 
-        /* Profile Page */
         #profile-page {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 20px; /* Уменьшен отступ сверху */
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
             flex-grow: 1;
         }
-        
-        #profile-card {
-            background-color: transparent;
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            width: 100%;
-            max-width: 350px;
-            margin-bottom: 20px;
+
+        .history-column {
+            width: 65%;
+        }
+
+        .profile-column {
+            width: 30%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-sizing: border-box;
+            padding-top: 20px;
         }
-        #profile-img {
-            width: 140px; /* Увеличен размер аватара */
-            height: 140px;
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            margin-bottom: 20px;
-            border: 4px solid var(--tg-link);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
         }
-        #profile-name {
-            font-size: 26px;
+
+        .profile-name {
+            font-size: 24px;
             font-weight: 700;
             margin: 0;
         }
-        #profile-username {
+
+        .profile-username {
             font-size: 18px;
             color: var(--tg-hint);
             margin: 8px 0 0;
         }
-        #profile-id {
-            font-size: 14px;
-            color: var(--tg-hint);
-            margin-top: 15px;
-        }
 
-        /* History Section */
-        #history-section {
-            width: 100%;
-            max-width: 350px;
-            margin-top: 30px;
-            text-align: left;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: var(--tg-text);
-            padding-left: 10px;
-        }
-        
-        .history-list {
-            background-color: var(--tg-secondary-bg);
-            border-radius: 12px;
-            padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .history-item {
-            padding: 12px 0;
-            border-bottom: 1px solid color-mix(in srgb, var(--tg-hint) 20%, transparent);
-            font-size: 15px;
-        }
-        
-        .history-item:last-child {
-            border-bottom: none;
-        }
-        
-        .history-date {
-            color: var(--tg-hint);
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-        
-        .history-action {
-            color: var(--tg-text);
-            font-weight: 500;
-        }
-
-        /* Subscription Card */
-        .subscription-card {
-            background: linear-gradient(135deg, color-mix(in srgb, var(--tg-link) 90%, black), color-mix(in srgb, var(--tg-link) 60%, black));
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin-top: 20px;
-            width: 100%;
-            max-width: 350px;
-            box-sizing: border-box;
-            color: #ffffff;
-            box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
-        }
-
-        .subscription-card h2 {
-            font-size: 22px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-        .subscription-card p {
-            font-size: 16px;
-            margin-bottom: 25px;
-            opacity: 0.9;
-        }
-
-        .subscribe-button {
-            background-color: #ffffff;
-            color: var(--tg-link);
-            padding: 12px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .subscribe-button:hover {
-            background-color: #f0f0f0;
-        }
-
-        /* Modal Overlay */
-        #plan-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        #plan-modal-overlay.active {
-            display: block;
-            opacity: 1;
-        }
-
-        /* Plan Modal */
-        #plan-modal {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--tg-bg);
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            padding: 25px;
-            box-sizing: border-box;
-            z-index: 1001;
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-
-        #plan-modal.active {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .modal-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .close-button {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--tg-hint);
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .plan-option {
-            background-color: var(--tg-secondary-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .plan-option:active {
-            transform: scale(0.98);
-        }
-
-        .plan-option.selected {
-            border: 2px solid var(--tg-link);
-        }
-
-        .plan-name {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .plan-price {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--tg-link);
-            margin-bottom: 5px;
-        }
-
-        .plan-description {
-            font-size: 14px;
-            color: var(--tg-hint);
-            margin-bottom: 15px;
-        }
-
-        .plan-features {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .plan-features li {
-            padding: 5px 0;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-        }
-
-        .plan-features li:before {
-            content: "✓";
-            color: var(--tg-link);
-            margin-right: 8px;
-            font-weight: bold;
-        }
-
-        .modal-action-button {
-            background-color: var(--tg-link);
-            color: var(--tg-button-text);
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 17px;
-            fontWeight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            transition: transform 0.2s;
-        }
-
-        .modal-action-button:active {
-            transform: scale(0.97);
+        #history-content {
+           margin-top: 20px;
         }
     </style>
 </head>
@@ -459,84 +225,17 @@
 </div>
 
 <div id="profile-page" class="step">
-    <div id="profile-card">
-        <img id="profile-img" src="" alt="User photo">
-        <h1 id="profile-name"></h1>
-        <p id="profile-username"></p>
-        <p id="profile-id"></p>
-    </div>
-    
-    <!-- История слева от профиля -->
-    <div id="history-section">
-        <div class="section-title">История</div>
-        <div class="history-list" id="history-list">
-            <!-- История будет добавляться динамически -->
-            <div class="history-item">
-                <div class="history-date">Сегодня, 14:30</div>
-                <div class="history-action">Парсинг продавца 12345</div>
-            </div>
-            <div class="history-item">
-                <div class="history-date">Вчера, 11:15</div>
-                <div class="history-action">Парсинг продавца 67890</div>
-            </div>
-            <div class="history-item">
-                <div class="history-date">15.11.2023, 09:45</div>
-                <div class="history-action">Парсинг категории "Электроника"</div>
-            </div>
+    <div class="history-column">
+        <h2>История</h2>
+        <div id="history-content">
+             <!-- Сюда будет загружаться история -->
         </div>
     </div>
-    
-    <div class="subscription-card">
-        <h2>Premium-Доступ</h2>
-        <p>Получите доступ к эксклюзивным функциям и аналитике.</p>
-        <button class="subscribe-button" id="profile-plan-button">Оформить подписку ($1.99)</button>
+    <div class="profile-column">
+        <img id="profile-img" src="" alt="User Avatar" class="profile-avatar">
+        <h1 id="profile-name" class="profile-name"></h1>
+        <p id="profile-username" class="profile-username"></p>
     </div>
-</div>
-
-<!-- Plan Modal -->
-<div id="plan-modal-overlay"></div>
-<div id="plan-modal">
-    <div class="modal-header">
-        <h2 class="modal-title">Выберите тарифный план</h2>
-        <button class="close-button" id="close-plan-modal">✕</button>
-    </div>
-    
-    <div class="plan-option selected" data-plan="basic">
-        <div class="plan-name">Базовый</div>
-        <div class="plan-price">$0.99/мес</div>
-        <div class="plan-description">Для начинающих продавцов</div>
-        <ul class="plan-features">
-            <li>До 100 товаров в день</li>
-            <li>Базовая аналитика</li>
-            <li>Экспорт в Excel</li>
-        </ul>
-    </div>
-    
-    <div class="plan-option" data-plan="premium">
-        <div class="plan-name">Премиум</div>
-        <div class="plan-price">$1.99/мес</div>
-        <div class="plan-description">Для профессиональных продавцов</div>
-        <ul class="plan-features">
-            <li>До 1000 товаров в день</li>
-            <li>Расширенная аналитика</li>
-            <li>Приоритетная поддержка</li>
-            <li>Автоматическое обновление данных</li>
-        </ul>
-    </div>
-    
-    <div class="plan-option" data-plan="business">
-        <div class="plan-name">Бизнес</div>
-        <div class="plan-price">$4.99/мес</div>
-        <div class="plan-description">Для крупных компаний</div>
-        <ul class="plan-features">
-            <li>Неограниченное количество товаров</li>
-            <li>Полная аналитика и отчеты</li>
-            <li>API доступ</li>
-            <li>Персональный менеджер</li>
-        </ul>
-    </div>
-    
-    <button class="modal-action-button" id="select-plan-button">Выбрать тариф</button>
 </div>
 
 <script>
@@ -556,12 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sellerName: '', 
         totalItems: 0, 
         isProfileOpen: false,
-        selectedPlan: 'basic',
-        history: [
-            { date: 'Сегодня, 14:30', action: 'Парсинг продавца 12345' },
-            { date: 'Вчера, 11:15', action: 'Парсинг продавца 67890' },
-            { date: '15.11.2023, 09:45', action: 'Парсинг категории "Электроника"' }
-        ]
+        selectedPlan: 'basic'
     };
     
     const ui = {
@@ -610,10 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
             img: document.getElementById('profile-img'),
             name: document.getElementById('profile-name'),
             username: document.getElementById('profile-username'),
-            id: document.getElementById('profile-id')
-        },
-        history: {
-            list: document.getElementById('history-list')
         },
         plan: {
             button: document.getElementById('plan-button'),
@@ -625,60 +315,19 @@ document.addEventListener('DOMContentLoaded', function() {
             options: document.querySelectorAll('.plan-option')
         }
     };
-
-    // Plan Modal Functions
-    const openPlanModal = () => {
-        ui.plan.modal.classList.add('active');
-        ui.plan.overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    };
-
-    const closePlanModal = () => {
-        ui.plan.modal.classList.remove('active');
-        ui.plan.overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    };
-
-    const selectPlan = (plan) => {
-        state.selectedPlan = plan;
-        ui.plan.options.forEach(option => {
-            option.classList.toggle('selected', option.dataset.plan === plan);
-        });
-    };
-
-    // Event Listeners for Plan Modal
-    ui.plan.button.addEventListener('click', openPlanModal);
-    ui.plan.profileButton.addEventListener('click', openPlanModal);
-    ui.plan.closeButton.addEventListener('click', closePlanModal);
-    ui.plan.overlay.addEventListener('click', closePlanModal);
     
-    ui.plan.options.forEach(option => {
-        option.addEventListener('click', () => selectPlan(option.dataset.plan));
-    });
-    
-    ui.plan.selectButton.addEventListener('click', () => {
-        // Here you would typically process the payment
-        alert(`Вы выбрали тариф: ${state.selectedPlan}`);
-        closePlanModal();
-    });
-
     const showScreen = (screenName) => {
-        // screenName can be 'main' or 'profile'
         state.isProfileOpen = (screenName === 'profile');
         
-        // Скрываем все шаги
         document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
         
         if (state.isProfileOpen) {
-            // Показываем страницу профиля
             ui.steps.profile.classList.add('active');
-            // Показываем кнопку "Тариф" только на странице профиля
             ui.plan.button.style.display = 'block';
+            ui.container.classList.remove('active');
         } else {
-            // Показываем главный контейнер с текущим шагом
             ui.container.classList.add('active');
             ui.steps[state.currentStep].classList.add('active');
-            // Скрываем кнопку "Тариф" на главном экране
             ui.plan.button.style.display = 'none';
         }
         
@@ -811,19 +460,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMainButton();
     };
 
-    const renderHistory = () => {
-        ui.history.list.innerHTML = '';
-        state.history.forEach(item => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.innerHTML = `
-                <div class="history-date">${item.date}</div>
-                <div class="history-action">${item.action}</div>
-            `;
-            ui.history.list.appendChild(historyItem);
-        });
-    };
-
     ui.inputs.categorySearch.addEventListener('input', (e) => renderList(ui.lists.category, Object.keys(state.categoriesData), 'category', e.target.value));
     ui.inputs.subcategorySearch.addEventListener('input', (e) => {
         if (!state.category) return;
@@ -895,12 +531,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const renderProfile = (user) => {
         if (!user) return;
-        const userPhoto = user.photo_url || 'https://via.placeholder.com/120'; // Placeholder
+        const userPhoto = user.photo_url || 'https://via.placeholder.com/150'; 
         ui.profile.icon.style.backgroundImage = `url(${userPhoto})`;
         ui.profile.img.src = userPhoto;
         ui.profile.name.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Anonymous User';
         ui.profile.username.textContent = user.username ? `@${user.username}` : 'No username';
-        ui.profile.id.textContent = `ID: ${user.id}`;
     }
 
     ui.profile.icon.addEventListener('click', () => {
@@ -909,9 +544,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup
     renderProfile(webApp.initDataUnsafe.user);
-    renderHistory();
     fetchCategories();
-    showScreen('main'); // Start on the main screen
+    showScreen('main');
     goToStep(1);
 
 });
