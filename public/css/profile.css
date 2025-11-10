@@ -1,0 +1,132 @@
+/* Profile Page */
+#profile-page {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 20px; /* Уменьшен отступ сверху */
+    flex-grow: 1;
+}
+
+#profile-card {
+    background-color: transparent;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    width: 100%;
+    max-width: 350px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
+#profile-img {
+    width: 140px; /* Увеличен размер аватара */
+    height: 140px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    border: 4px solid var(--tg-link);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+#profile-name {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+}
+#profile-username {
+    font-size: 18px;
+    color: var(--tg-hint);
+    margin: 8px 0 0;
+}
+#profile-id {
+    font-size: 14px;
+    color: var(--tg-hint);
+    margin-top: 15px;
+}
+
+/* History Section */
+#history-section {
+    width: 100%;
+    max-width: 350px;
+    margin-top: 30px;
+    text-align: left;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--tg-text);
+    padding-left: 10px;
+}
+
+.history-list {
+    background-color: var(--tg-secondary-bg);
+    border-radius: 12px;
+    padding: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 12px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--tg-hint) 20%, transparent);
+    font-size: 15px;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-date {
+    color: var(--tg-hint);
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.history-action {
+    color: var(--tg-text);
+    font-weight: 500;
+}
+
+/* Subscription Card */
+.subscription-card {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--tg-link) 90%, black), color-mix(in srgb, var(--tg-link) 60%, black));
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 350px;
+    box-sizing: border-box;
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
+}
+
+.subscription-card h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+.subscription-card p {
+    font-size: 16px;
+    margin-bottom: 25px;
+    opacity: 0.9;
+}
+
+.subscribe-button {
+    background-color: #ffffff;
+    color: var(--tg-link);
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s, color 0.2s;
+}
+.subscribe-button:hover {
+    background-color: #f0f0f0;
+}
