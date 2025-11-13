@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WB Parser</title>
+    <!-- Скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
+            /* Переменные из темы Telegram */
             --tg-bg: var(--tg-theme-bg-color, #f4f4f5);
             --tg-text: var(--tg-theme-text-color, #000000);
             --tg-hint: var(--tg-theme-hint-color, #9e9e9e);
@@ -15,7 +17,11 @@
             --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #ffffff);
             --tg-destructive: var(--tg-theme-destructive-text-color, #ff3b30);
+            
+            /* Пользовательский цвет для неактивной кнопки (на основе темы) */
+            --tg-disabled-button-color: color-mix(in srgb, var(--tg-hint) 40%, var(--tg-bg) 60%);
 
+            /* Градиенты */
             --button-gradient: linear-gradient(135deg, #007aff, #5856d6);
             --success-gradient: linear-gradient(135deg, #34c759, #28a745);
             --success-shadow: 0 4px 15px rgba(52, 199, 89, 0.4);
@@ -122,7 +128,7 @@
         .action-button:active { transform: scale(0.97); }
         .hidden { display: none !important; }
 
-        /* Profile Icon */
+        /* Иконка профиля */
         #profile-icon {
             position: absolute;
             top: 10px;
@@ -135,7 +141,7 @@
             z-index: 100;
         }
 
-        /* Plan Button - теперь только на странице профиля */
+        /* Кнопка тарифа (только на странице профиля) */
         #plan-button {
             position: absolute;
             top: 10px;
@@ -153,18 +159,20 @@
             display: none; /* Скрыта по умолчанию */
         }
 
-        /* Profile Page */
+        /* Страница профиля */
         #profile-page {
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding-top: 20px; /* Уменьшен отступ сверху */
+            justify-content: flex-start; /* Начинаем сверху */
+            padding-top: 20px;
             flex-grow: 1;
+            overflow-y: auto; /* Добавляем скролл, если контент не помещается */
         }
         
+        /* Карточка профиля */
         #profile-card {
-            background-color: transparent;
+            background-color: var(--tg-secondary-bg); /* Улучшено: добавлен фон */
             border-radius: 12px;
             padding: 25px;
             text-align: center;
@@ -175,22 +183,23 @@
             flex-direction: column;
             align-items: center;
             box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Улучшено: добавлена тень */
         }
         #profile-img {
-            width: 140px; /* Увеличен размер аватара */
-            height: 140px;
+            width: 120px; /* Улучшено: размер уменьшен */
+            height: 120px;
             border-radius: 50%;
             margin-bottom: 20px;
-            border: 4px solid var(--tg-link);
+            border: 3px solid var(--tg-link); /* Улучшено: толщина рамки */
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         #profile-name {
-            font-size: 26px;
+            font-size: 24px; /* Улучшено: размер шрифта */
             font-weight: 700;
             margin: 0;
         }
         #profile-username {
-            font-size: 18px;
+            font-size: 16px; /* Улучшено: размер шрифта */
             color: var(--tg-hint);
             margin: 8px 0 0;
         }
@@ -200,11 +209,11 @@
             margin-top: 15px;
         }
 
-        /* History Section */
+        /* Секция истории */
         #history-section {
             width: 100%;
             max-width: 350px;
-            margin-top: 30px;
+            margin-top: 10px; /* Улучшено: уменьшен отступ */
             text-align: left;
         }
         
@@ -244,8 +253,16 @@
             color: var(--tg-text);
             font-weight: 500;
         }
+        
+        /* Сообщение о пустой истории */
+        .history-empty {
+            text-align: center;
+            padding: 25px;
+            color: var(--tg-hint);
+            font-size: 15px;
+        }
 
-        /* Subscription Card */
+        /* Карточка подписки */
         .subscription-card {
             background: linear-gradient(135deg, color-mix(in srgb, var(--tg-link) 90%, black), color-mix(in srgb, var(--tg-link) 60%, black));
             padding: 25px;
@@ -255,7 +272,7 @@
             width: 100%;
             max-width: 350px;
             box-sizing: border-box;
-            color: #ffffff;
+            color: var(--tg-button-text); /* Улучшено: используется переменная */
             box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
         }
 
@@ -271,7 +288,7 @@
         }
 
         .subscribe-button {
-            background-color: #ffffff;
+            background-color: var(--tg-button-text); /* Улучшено: используется переменная */
             color: var(--tg-link);
             padding: 12px 25px;
             border: none;
@@ -286,7 +303,7 @@
             background-color: #f0f0f0;
         }
 
-        /* Modal Overlay */
+        /* Модальное окно */
         #plan-modal-overlay {
             position: fixed;
             top: 0;
@@ -305,7 +322,6 @@
             opacity: 1;
         }
 
-        /* Plan Modal */
         #plan-modal {
             position: fixed;
             bottom: 0;
@@ -431,9 +447,11 @@
 </head>
 <body>
 
+<!-- Элементы управления, общие для всех экранов -->
 <div id="profile-icon"></div>
 <button id="plan-button">Тариф</button>
 
+<!-- Контейнер для основного процесса (шаги 1-5 и прогресс) -->
 <div class="container active">
     <div id="step1" class="step active"> <h1>Шаг 1: ID Продавца</h1> <div class="input-group"> <input type="text" id="seller-id" placeholder="Введите ID продавца"> </div> </div>
     <div id="step2" class="step"> <h1>Шаг 2: Категория</h1> <input type="search" id="category-search" placeholder="Поиск категории..."> <div id="category-list" class="list-container"></div> </div>
@@ -458,31 +476,19 @@
     </div>
 </div>
 
+<!-- Контейнер для страницы профиля -->
 <div id="profile-page" class="step">
     <div id="profile-card">
-        <img id="profile-img" src="" alt="User photo">
+        <img id="profile-img" src="" alt="User photo"> <!-- src будет установлен из JS -->
         <h1 id="profile-name"></h1>
         <p id="profile-username"></p>
         <p id="profile-id"></p>
     </div>
     
-    <!-- История слева от профиля -->
     <div id="history-section">
         <div class="section-title">История</div>
         <div class="history-list" id="history-list">
-            <!-- История будет добавляться динамически -->
-            <div class="history-item">
-                <div class="history-date">Сегодня, 14:30</div>
-                <div class="history-action">Парсинг продавца 12345</div>
-            </div>
-            <div class="history-item">
-                <div class="history-date">Вчера, 11:15</div>
-                <div class="history-action">Парсинг продавца 67890</div>
-            </div>
-            <div class="history-item">
-                <div class="history-date">15.11.2023, 09:45</div>
-                <div class="history-action">Парсинг категории "Электроника"</div>
-            </div>
+            <!-- Улучшено: статический контент удален, будет рендериться из JS -->
         </div>
     </div>
     
@@ -493,7 +499,7 @@
     </div>
 </div>
 
-<!-- Plan Modal -->
+<!-- Модальное окно тарифов -->
 <div id="plan-modal-overlay"></div>
 <div id="plan-modal">
     <div class="modal-header">
@@ -545,6 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
     webApp.ready();
     webApp.expand();
 
+    // Состояние приложения
     const state = { 
         currentStep: 1, 
         categoriesData: {}, 
@@ -557,13 +564,14 @@ document.addEventListener('DOMContentLoaded', function() {
         totalItems: 0, 
         isProfileOpen: false,
         selectedPlan: 'basic',
-        history: [
+        history: [ // Данные для истории
             { date: 'Сегодня, 14:30', action: 'Парсинг продавца 12345' },
             { date: 'Вчера, 11:15', action: 'Парсинг продавца 67890' },
             { date: '15.11.2023, 09:45', action: 'Парсинг категории "Электроника"' }
         ]
     };
     
+    // Элементы UI
     const ui = {
         container: document.querySelector('.container'),
         steps: {
@@ -625,8 +633,12 @@ document.addEventListener('DOMContentLoaded', function() {
             options: document.querySelectorAll('.plan-option')
         }
     };
+    
+    // Улучшено: Получаем цвета темы из CSS для кнопки
+    const themeButtonColor = getComputedStyle(document.body).getPropertyValue('--tg-button').trim() || '#007aff';
+    const disabledButtonColor = getComputedStyle(document.body).getPropertyValue('--tg-disabled-button-color').trim() || '#a8a8a8';
 
-    // Plan Modal Functions
+    // --- Функции модального окна ---
     const openPlanModal = () => {
         ui.plan.modal.classList.add('active');
         ui.plan.overlay.classList.add('active');
@@ -646,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    // Event Listeners for Plan Modal
+    // Слушатели модального окна
     ui.plan.button.addEventListener('click', openPlanModal);
     ui.plan.profileButton.addEventListener('click', openPlanModal);
     ui.plan.closeButton.addEventListener('click', closePlanModal);
@@ -657,28 +669,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     ui.plan.selectButton.addEventListener('click', () => {
-        // Here you would typically process the payment
         alert(`Вы выбрали тариф: ${state.selectedPlan}`);
         closePlanModal();
     });
 
+    // --- Основная логика ---
+
     const showScreen = (screenName) => {
-        // screenName can be 'main' or 'profile'
         state.isProfileOpen = (screenName === 'profile');
         
-        // Скрываем все шаги
         document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
         
         if (state.isProfileOpen) {
-            // Показываем страницу профиля
             ui.steps.profile.classList.add('active');
-            // Показываем кнопку "Тариф" только на странице профиля
             ui.plan.button.style.display = 'block';
+            ui.container.classList.remove('active'); // Скрываем главный контейнер
         } else {
-            // Показываем главный контейнер с текущим шагом
             ui.container.classList.add('active');
             ui.steps[state.currentStep].classList.add('active');
-            // Скрываем кнопку "Тариф" на главном экране
             ui.plan.button.style.display = 'none';
         }
         
@@ -692,7 +700,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.step.active').forEach(s => s.classList.remove('active'));
         ui.steps[step].classList.add('active');
         updateMainButton();
-        step > 1 && step !== 'progress' ? webApp.BackButton.show() : webApp.BackButton.hide();
+        (step > 1 && step !== 'progress') ? webApp.BackButton.show() : webApp.BackButton.hide();
     };
 
     const updateMainButton = () => {
@@ -705,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let isEnabled = false;
 
         switch(state.currentStep) {
-            case 1: isEnabled = ui.inputs.sellerId.value.trim(); webApp.MainButton.setText(buttonText); break;
+            case 1: isEnabled = ui.inputs.sellerId.value.trim().length > 0; webApp.MainButton.setText(buttonText); break;
             case 2: isEnabled = !!state.category; webApp.MainButton.setText(buttonText); break;
             case 3: isEnabled = !!state.xsubjectId; webApp.MainButton.setText(buttonText); break;
             case 4: isEnabled = true; webApp.MainButton.setText(ui.inputs.brandId.value.trim() ? buttonText : skipText); break;
@@ -714,11 +722,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         webApp.MainButton.show();
-        isEnabled ? webApp.MainButton.enable().setParams({ color: 'var(--tg-theme-button-color)' }) : webApp.MainButton.disable().setParams({ color: '#a8a8a8' });
+        
+        // Улучшено: используем вычисленные цвета для кнопки
+        if (isEnabled) {
+            webApp.MainButton.enable().setParams({ color: themeButtonColor });
+        } else {
+            webApp.MainButton.disable().setParams({ color: disabledButtonColor });
+        }
     };
 
     webApp.onEvent('mainButtonClicked', () => {
         if (state.isProfileOpen) return;
+        
+        webApp.HapticFeedback.impactOccurred('medium'); // Улучшено: тактильный отклик
+        
         switch(state.currentStep) {
             case 1: state.sellerId = ui.inputs.sellerId.value.trim(); goToStep(2); break;
             case 2: renderList(ui.lists.subcategory, state.categoriesData[state.category], 'subcategory'); goToStep(3); break;
@@ -736,6 +753,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     webApp.onEvent('backButtonClicked', () => {
+        webApp.HapticFeedback.impactOccurred('light'); // Улучшено: тактильный отклик
         if (state.isProfileOpen) {
             showScreen('main');
         } else {
@@ -750,6 +768,8 @@ document.addEventListener('DOMContentLoaded', function() {
     Object.values(ui.inputs).forEach(el => el.addEventListener('input', updateMainButton));
 
     const fetchCategories = async () => {
+        // Улучшено: показываем загрузку
+        ui.lists.category.innerHTML = `<div class="list-item" style="text-align: center; color: var(--tg-hint);">Загрузка категорий...</div>`;
         try {
             const response = await fetch('/categories');
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -802,6 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     const selectItem = (type, value, id = null) => {
+        webApp.HapticFeedback.impactOccurred('light'); // Улучшено: тактильный отклик
         if (type === 'category') {
             state.category = value; state.subcategory = null; state.xsubjectId = null;
         } else {
@@ -811,8 +832,14 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMainButton();
     };
 
+    // Улучшено: функция рендеринга истории с состоянием "пусто"
     const renderHistory = () => {
         ui.history.list.innerHTML = '';
+        if (state.history.length === 0) {
+            ui.history.list.innerHTML = '<div class="history-empty">Ваша история парсинга пуста.</div>';
+            return;
+        }
+        
         state.history.forEach(item => {
             const historyItem = document.createElement('div');
             historyItem.className = 'history-item';
@@ -841,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const es = new EventSource(`/stream?${params.toString()}`);
         const resetUI = () => {
-            webApp.MainButton.setText('Начать заново').show().enable();
+            webApp.MainButton.setText('Начать заново').show().enable().setParams({ color: themeButtonColor });
             webApp.MainButton.onClick(() => window.location.reload());
             webApp.BackButton.hide();
         }
@@ -861,6 +888,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'log': ui.progressView.log.textContent = data.message; break;
                 case 'result':
+                    webApp.HapticFeedback.notificationOccurred('success'); // Улучшено: отклик
                     ui.progressView.container.classList.add('hidden');
                     ui.resultView.container.classList.remove('hidden');
                     ui.resultView.sellerName.textContent = state.sellerName;
@@ -871,6 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     resetUI();
                     break;
                 case 'error':
+                    webApp.HapticFeedback.notificationOccurred('error'); // Улучшено: отклик
                     ui.progressView.container.classList.add('hidden');
                     ui.resultView.container.classList.remove('hidden');
                     ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">${data.message}</p>`;
@@ -883,6 +912,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         es.onerror = () => { 
+            webApp.HapticFeedback.notificationOccurred('error'); // Улучшено: отклик
             ui.progressView.container.classList.add('hidden');
             ui.resultView.container.classList.remove('hidden');
             ui.resultView.infoBox.innerHTML = `<p style="color: var(--tg-destructive); text-align: center;">Потеряно соединение с сервером.</p>`;
@@ -893,26 +923,32 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };
     
+    // Улучшено: функция рендеринга профиля
     const renderProfile = (user) => {
-        if (!user) return;
-        const userPhoto = user.photo_url || 'https://via.placeholder.com/120'; // Placeholder
+        const userData = user || {
+            first_name: 'Anonymous', last_name: 'User',
+            username: null, id: '000000', photo_url: null
+        };
+        
+        const userPhoto = userData.photo_url || `https://placehold.co/120x120/E0E0E0/757575?text=${(userData.first_name || 'A').charAt(0)}`;
+        
         ui.profile.icon.style.backgroundImage = `url(${userPhoto})`;
         ui.profile.img.src = userPhoto;
-        ui.profile.name.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Anonymous User';
-        ui.profile.username.textContent = user.username ? `@${user.username}` : 'No username';
-        ui.profile.id.textContent = `ID: ${user.id}`;
+        ui.profile.name.textContent = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        ui.profile.username.textContent = userData.username ? `@${userData.username}` : 'No username';
+        ui.profile.id.textContent = `User ID: ${userData.id}`;
     }
 
     ui.profile.icon.addEventListener('click', () => {
         showScreen('profile');
     });
 
-    // Initial setup
+    // --- Инициализация ---
     renderProfile(webApp.initDataUnsafe.user);
-    renderHistory();
+    renderHistory(); // Рендерим историю при запуске
     fetchCategories();
-    showScreen('main'); // Start on the main screen
-    goToStep(1);
+    showScreen('main'); // Начинаем с главного экрана
+    goToStep(1); // Устанавливаем первый шаг
 
 });
 </script>
