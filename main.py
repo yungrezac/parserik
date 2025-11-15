@@ -70,6 +70,25 @@ def find_value_in_options(options, name):
             return opt.get('value')
     return ''
 
+def get_columns_for_subcategory(subcategory_id):
+    """Retrieves the list of columns for a given subcategory ID from subcategories.json."""
+    if not subcategory_id:
+        return None
+    try:
+        with open('subcategories.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        for category, subcategories in data.items():
+            for subcategory_name, subcategory_data in subcategories.items():
+                if str(subcategory_data.get('id')) == str(subcategory_id):
+                    if 'columns' in subcategory_data:
+                        return subcategory_data['columns']
+                    elif 'column' in subcategory_data:
+                        return subcategory_data['column']
+        return None
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Warning: Could not read or parse subcategories.json: {e}")
+        return None
+
 def map_data(all_products, columns):
     """Преобразует сырые данные о товарах в структурированный список для Excel."""
     mapped_data = []
@@ -86,11 +105,9 @@ def map_data(all_products, columns):
             'Страна производства': find_value_in_options(options, 'Страна производства'),
             'Комплектация': find_value_in_options(options, 'Комплектация'),
             'ТНВЭД': find_value_in_options(options, 'ТН ВЭД'),
-            # --- НОВОЕ ПОЛЕ: КАТЕГОРИЯ ---
             'Категория': find_value_in_options(options, 'Раздел меню') or item.get('subjectName', '')
         }
         
-        # Добавляем остальные поля, если они есть в `columns`
         for col_name in columns:
             if col_name not in row_data:
                 row_data[col_name] = find_value_in_options(options, col_name)
@@ -114,13 +131,11 @@ def create_excel_file(data, columns, seller_id):
     ws = wb.active
     ws.title = f"Товары продавца {seller_id}"
 
-    # Стили
     header_style = NamedStyle(name="header_style")
     header_style.fill = PatternFill(start_color="9A41FE", end_color="9A41FE", fill_type="solid")
     header_style.font = Font(name='Calibri', size=11, bold=True, color="FFFFFF")
     header_style.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     
-    # --- НОВЫЙ ЗАГОЛОВОК ---
     final_columns = ['Артикул продавца', 'Наименование', 'Бренд', 'Категория'] + [col for col in columns if col not in ['Артикул продавца', 'Наименование', 'Бренд', 'Категория']]
     ws.append(final_columns)
     
@@ -128,11 +143,9 @@ def create_excel_file(data, columns, seller_id):
         cell.style = header_style
     ws.row_dimensions[1].height = 30
 
-    # Данные
     for row_data in data:
         ws.append([row_data.get(header, '') for header in final_columns])
 
-    # Авто-ширина столбцов
     for col in ws.columns:
         max_length = 0
         column_letter = col[0].column_letter
@@ -149,7 +162,7 @@ def create_excel_file(data, columns, seller_id):
     
 # --- Основная функция парсинга ---
 
-def run_parser(seller_id, brand_id):
+def run_parser(seller_id, brand_id, subcategory_id):
     """Основная логика для сбора и обработки данных о товарах."""
     print("Запуск парсера...")
     all_products = []
@@ -157,9 +170,9 @@ def run_parser(seller_id, brand_id):
     print("Получение карты маршрутов WB...")
     baskets = get_mediabasket_route_map()
 
-    # Формируем URL для получения общего количества товаров
     brand_query = f"&fbrand={brand_id}" if brand_id else ""
-    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}&lang=ru&spp=30"
+    subcategory_query = f"&xsubject={subcategory_id}" if subcategory_id else ""
+    url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}{subcategory_query}&lang=ru&spp=30"
 
     try:
         res_total = make_request(url_total_list, headers).json()
@@ -169,17 +182,16 @@ def run_parser(seller_id, brand_id):
         return
 
     if not products_total:
-        print("Товары не найдены. Проверьте ID продавца и бренда.")
+        print("Товары не найдены. Проверьте ID продавца, бренда и подкатегории.")
         return
 
     pages_count = math.ceil(products_total / 100)
     print(f"Найдено товаров: {products_total}. Всего страниц: {pages_count}.")
 
-    # Основной цикл по страницам
     count = 0
     for page_num in range(1, pages_count + 1):
         print(f"Обработка страницы {page_num} из {pages_count}...")
-        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&hide_dtype=13&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}"
+        url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&hide_dtype=13&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}{subcategory_query}"
         
         try:
             products_on_page = make_request(url_list, headers).json().get('products', [])
@@ -191,13 +203,11 @@ def run_parser(seller_id, brand_id):
             count += 1
             print(f"  [{count}/{products_total}] Обработка товара: {item.get('name', '')[:50]}...")
             
-            # Получение детальной информации
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             
-            # Если хост не найден, используем перебор
             if not backetName:
-                 for i in range(1, 15): # Пробуем стандартные корзины
+                 for i in range(1, 15):
                     backetFormattedNumber = f"0{i}" if i < 10 else str(i)
                     urlItem = f"https://basket-{backetFormattedNumber}.wbbasket.ru/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                     try:
@@ -207,9 +217,9 @@ def run_parser(seller_id, brand_id):
                             break
                     except requests.exceptions.RequestException:
                         continue
-                 else: # Если ни одна корзина не подошла
+                 else:
                     item['advanced'] = {}
-            else: # Если хост найден
+            else:
                 urlItem = f"https://{backetName}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 try:
                     productResponse = requests.get(urlItem, headers=headers, timeout=3)
@@ -221,21 +231,24 @@ def run_parser(seller_id, brand_id):
                     item['advanced'] = {}
 
             all_products.append(item)
-            time.sleep(random.uniform(0.1, 0.3)) # Задержка между товарами
+            time.sleep(random.uniform(0.1, 0.3))
 
-        time.sleep(random.uniform(1, 2)) # Задержка между страницами
+        time.sleep(random.uniform(1, 2))
 
-    print("
-Сбор данных завершен. Формирование Excel-файла...")
+    print("\nСбор данных завершен. Формирование Excel-файла...")
     
-    # Определяем все возможные характеристики для колонок
-    all_options = set()
-    for p in all_products:
-        if 'advanced' in p and 'options' in p['advanced']:
-            for opt in p['advanced']['options']:
-                all_options.add(opt['name'])
-    
-    columns = ['Артикул продавца', 'Наименование', 'Бренд', 'Категория', 'Описание', 'Состав', 'Страна производства', 'Комплектация', 'ТНВЭД'] + sorted(list(all_options))
+    columns = get_columns_for_subcategory(subcategory_id)
+
+    if columns:
+        print(f"Используем предзаданные столбцы для подкатегории {subcategory_id}.")
+    else:
+        print("Столбцы для подкатегории не найдены. Собираем все доступные характеристики.")
+        all_options = set()
+        for p in all_products:
+            if 'advanced' in p and 'options' in p['advanced']:
+                for opt in p['advanced']['options']:
+                    all_options.add(opt['name'])
+        columns = ['Артикул продавца', 'Наименование', 'Бренд', 'Категория', 'Описание', 'Состав', 'Страна производства', 'Комплектация', 'ТНВЭД'] + sorted(list(all_options))
 
     mapped_data = map_data(all_products, columns)
     
@@ -251,8 +264,9 @@ if __name__ == '__main__':
     print("--- WB Parser ---")
     seller_id_input = input("Введите ID продавца: ").strip()
     brand_id_input = input("Введите ID бренда (оставьте пустым, если не требуется): ").strip()
+    subcategory_id_input = input("Введите ID подкатегории (оставьте пустым, если не требуется): ").strip()
 
     if not seller_id_input.isdigit():
         print("Ошибка: ID продавца должен быть числом.")
     else:
-        run_parser(seller_id_input, brand_id_input)
+        run_parser(seller_id_input, brand_id_input, subcategory_id_input)
