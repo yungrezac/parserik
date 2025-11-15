@@ -9,6 +9,7 @@ import os
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side, NamedStyle
 import json
+from flask import Flask, request, Response, render_template
 
 # Заголовки, маскирующиеся под реальный браузер
 headers = {
@@ -51,7 +52,7 @@ def make_request(url, headers, timeout=10, retries=5, backoff_factor=2):
     raise Exception(f"Не удалось получить данные после {retries} попыток. URL: {url}")
 
 
-# --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССА ---
+# --- НОВАЯ ФУНКЦИЯ-ГЕНЕРАТОР ДЛЯ СТРИМИНГА ПРОГРЕССA ---
 def stream_parser(seller_id, brand_id, xsubject_id=None):
     """
     Основная логика парсинга, перестроенная в генератор, который yield'ит обновления прогресса.
@@ -462,3 +463,31 @@ def extract_number(value):
         try: return float(match.group().replace(',', '.'))
         except ValueError: return ''
     return ''
+
+app = Flask(__name__, template_folder='public')
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/stream')
+def stream():
+    seller_id = request.args.get('seller_id')
+    brand_id = request.args.get('brand_id')
+    xsubject_id = request.args.get('xsubject_id')
+
+    if not seller_id or not brand_id:
+        return Response(json.dumps({'error': 'Missing seller_id or brand_id'}), mimetype='application/json'), 400
+
+    def generate():
+        try:
+            for progress_update in stream_parser(seller_id, brand_id, xsubject_id):
+                yield f"data: {progress_update}\n\n"
+        except Exception as e:
+            error_message = json.dumps({'type': 'error', 'message': str(e)})
+            yield f"data: {error_message}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
+if __name__ == '__main__':
+    app.run(debug=True)
