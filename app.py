@@ -30,10 +30,6 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
 }
 
-# --- Сессия для запросов ---
-session = requests.Session()
-session.headers.update(headers)
-
 # --- Маршруты API ---
 @app.route('/')
 def index():
@@ -88,7 +84,18 @@ def download_file(filename):
 # --- Логика парсинга ---
 def stream_parser(seller_id, brand_id, xsubject_id=None):
     all_products = []
+    
+    yield json.dumps({'type': 'log', 'message': 'Получение информации о продавце...'})
     seller_name = "Не найден"
+    try:
+        seller_page_url = f"https://www.wildberries.ru/seller/{seller_id}"
+        seller_page_res = make_request(seller_page_url, headers=headers)
+        seller_page_html = seller_page_res.text
+        match = re.search(r'<h2 class="seller-details__title">([^<]+)</h2>', seller_page_html)
+        if match:
+            seller_name = match.group(1).strip()
+    except Exception:
+        yield json.dumps({'type': 'log', 'message': 'Не удалось получить имя продавца со страницы.'})
 
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
     baskets = get_mediabasket_route_map()
@@ -100,7 +107,7 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
     url_total_list = f"https://catalog.wb.ru/sellers/v8/filters?ab_testing=false&appType=1&curr=rub&dest=-1257786&supplier={seller_id}{brand_query}{xsubject_query}&lang=ru&spp=30&uclusters=0"
     
     try:
-        res_total = make_request(url_total_list).json()
+        res_total = make_request(url_total_list, headers=headers).json()
         products_total = res_total.get('data', {}).get('total', 0)
     except Exception as e:
         raise Exception(f"Ошибка при получении общего числа товаров: {e}")
@@ -115,7 +122,7 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
     for page_num in range(1, pages_count + 1):
         url_list = f"https://catalog.wb.ru/sellers/v4/catalog?ab_testing=false&appType=1&curr=rub&dest=-1257786&hide_dtype=13&page={page_num}&sort=popular&spp=30&supplier={seller_id}{brand_query}{xsubject_query}"
         try:
-            products_on_page = make_request(url_list).json().get('products', [])
+            products_on_page = make_request(url_list, headers=headers).json().get('products', [])
         except (requests.exceptions.RequestException, json.JSONDecodeError):
             continue
 
@@ -131,16 +138,16 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
                 backetFormattedNumber = f"0{backetNumber}" if backetNumber < 10 else str(backetNumber)
                 urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
                 try:
-                    productResponse = make_request(urlItem, timeout=3)
+                    productResponse = requests.get(urlItem, headers=headers, timeout=3)
                     if productResponse.status_code == 200: item['advanced'] = productResponse.json(); break
                     if not isAutoServer and productResponse.status_code == 404: backetNumber += 1; continue
                     item['advanced'] = {}; break
                 except requests.exceptions.RequestException: item['advanced'] = {}; break
             
             all_products.append(item)
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(0.05, 0.2))
 
-        time.sleep(random.uniform(1, 2))
+        time.sleep(random.uniform(0.5, 1.5))
 
     columns = get_columns_for_subcategory(xsubject_id)
 
@@ -168,10 +175,10 @@ def get_columns_for_subcategory(xsubject_id):
                     return sub_data.get('columns', [])
     return []
 
-def make_request(url, timeout=20, retries=10, backoff_factor=1):
+def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
     for i in range(retries):
         try:
-            response = session.get(url, timeout=timeout)
+            response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response
         except requests.exceptions.RequestException:
@@ -181,7 +188,7 @@ def make_request(url, timeout=20, retries=10, backoff_factor=1):
 
 def get_mediabasket_route_map():
     try:
-        r = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', timeout=5)
+        r = make_request('https://cdn.wbbasket.ru/api/v3/upstreams', headers=headers, timeout=5)
         return r.json().get('recommend', {}).get('mediabasket_route_map', [{}])[0].get('hosts', [])
     except Exception: return []
 
