@@ -26,7 +26,7 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
 }
 
-def make_request(url, headers, timeout=10, retries=5, backoff_factor=0.5):
+def make_request(url, headers, timeout=10, retries=10, backoff_factor=1):
     """Надежная функция для выполнения HTTP-запросов с повторными попытками."""
     for i in range(retries):
         try:
@@ -92,43 +92,50 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
             products_on_page = response.json().get('products', [])
         except (requests.exceptions.RequestException, json.JSONDecodeError):
             current_page += 1
-            time.sleep(random.uniform(1, 3)) # Добавим задержку при ошибке на странице
+            time.sleep(random.uniform(3, 5)) # Добавим задержку при ошибке на странице
             continue
 
         for item in products_on_page:
             count += 1
             yield json.dumps({'type': 'progress', 'current': count, 'total': products_total, 'message': item.get('name', '')})
-            
+
             productId = str(item['id'])
             backetName = get_host_by_range(int(productId[:-5]), baskets)
             backetNumber, isAutoServer = 1, bool(backetName)
-            while True:
+            product_retries = 5
+            product_backoff_factor = 0.5
+            for i in range(product_retries):
                 if not isAutoServer and backetNumber > 12:
                     item['advanced'] = {}
                     break
-                
+
                 backetFormattedNumber = f"0{backetNumber}" if backetNumber < 10 else str(backetNumber)
                 urlItem = f"https://{backetName if isAutoServer else f'basket-{backetFormattedNumber}.wbbasket.ru'}/vol{productId[:-5]}/part{productId[:-3]}/{productId}/info/ru/card.json"
-                
+
                 try:
-                    # Используем более короткий таймаут для карточек, но без повторных попыток, чтобы не замедлять
-                    productResponse = requests.get(urlItem, headers=headers, timeout=3)
+                    productResponse = requests.get(urlItem, headers=headers, timeout=5)
                     if productResponse.status_code == 200:
                         item['advanced'] = productResponse.json()
                         break
                     if not isAutoServer and productResponse.status_code == 404:
                         backetNumber += 1
                         continue
+                    if productResponse.status_code == 429:
+                        sleep_time = product_backoff_factor * (2 ** i) + random.uniform(0, 1)
+                        time.sleep(sleep_time)
+                        continue
                     item['advanced'] = {}
                     break
                 except requests.exceptions.RequestException:
-                    item['advanced'] = {}
-                    break
+                    sleep_time = product_backoff_factor * (2 ** i) + random.uniform(0, 1)
+                    time.sleep(sleep_time)
+                    continue
+
             all_products.append(item)
-            time.sleep(random.uniform(0.1, 0.4)) # Небольшая задержка между товарами
+            time.sleep(random.uniform(0.5, 1.0)) # Небольшая задержка между товарами
 
         current_page += 1
-        time.sleep(random.uniform(1, 2)) # Задержка между страницами
+        time.sleep(random.uniform(2, 4)) # Задержка между страницами
 
     # 4. Маппинг данных и создание файла
     yield json.dumps({'type': 'log', 'message': 'Формирование итоговой таблицы...'})
@@ -167,7 +174,7 @@ def parse_input(input_str):
         parseResult = urlparse(input_str)
         sellerId = str(parseResult.path).split('/')[2]
         query = parse_qs(parseResult.query)
-        
+
         if 'fbrand' not in query:
             raise ValueError("Параметр fbrand не найден в ссылке.")
         brandId = query['fbrand'][0]
@@ -189,8 +196,8 @@ def get_mediabasket_route_map():
 
 def get_host_by_range(range_value, route_map):
     if not isinstance(route_map, list): return ''
-    for host_info in route_map: 
-        if 'vol_range_from' in host_info and 'vol_range_to' in host_info and host_info['vol_range_from'] <= range_value <= host_info['vol_range_to']: 
+    for host_info in route_map:
+        if 'vol_range_from' in host_info and 'vol_range_to' in host_info and host_info['vol_range_from'] <= range_value <= host_info['vol_range_to']:
             return host_info['host']
     return ''
 
@@ -199,10 +206,10 @@ def map_data(data, baskets):
     for item in data:
         advanced = item.get('advanced')
         if not advanced: continue
-        
+
         options = advanced.get('options', [])
         grouped_options = advanced.get('grouped_options', [])
-        
+
         dimensions_group = find_options_by_group_name(grouped_options, 'Габариты')
         advanced_info_group = find_options_by_group_name(grouped_options, 'Дополнительная информация')
         cosmetics_group = find_options_by_group_name(grouped_options, 'Косметическое средство')
@@ -219,18 +226,18 @@ def map_data(data, baskets):
                 certificate_num = cert.get('number', '')
 
         new_item = {
-            'Группа': '', 
+            'Группа': '',
             'Артикул продавца': item.get('vendorCode', ''),
             'Артикул WB': '',  # Оставляем пустым
             'Наименование': item.get('name', ''),
-            'Категория продавца': advanced.get('subj_root_name', ''), 
+            'Категория продавца': advanced.get('subj_root_name', ''),
             'Бренд': item.get('brand', ''),
             'Описание': advanced.get('description', ''),
             'Фото': '',  # Оставляем пустым
             'Видео': '',  # Оставляем пустым
             'Полное наименование товара': advanced.get('name', ''),
             'Состав': find_value_in_arrays(options, advanced_info_group, search_name='Состав'),
-            'Баркод': '', 
+            'Баркод': '',
             'Вес с упаковкой (кг)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес с упаковкой (кг)')),
             'Вес товара без упаковки (г)': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Вес товара без упаковки (г)')),
             'Высота упаковки': extract_number(find_value_in_arrays(options, dimensions_group, search_name='Высота упаковки')),
@@ -242,25 +249,25 @@ def map_data(data, baskets):
             'Номер сертификата соответствия': certificate_num,
             'Свидетельство о регистрации СГР': sgr_num,
             'SPF': find_value_in_arrays(options, cosmetics_group, search_name='SPF'),
-            'Артикул OZON': '', 
+            'Артикул OZON': '',
             'Возрастные ограничения': find_value_in_arrays(options, advanced_info_group, search_name='Возрастные ограничения'),
             'Время нанесения': find_value_in_arrays(options, cosmetics_group, search_name='Время нанесения'),
             'Действие': find_value_in_arrays(options, cosmetics_group, search_name='Действие'),
-            'ИКПУ': '', 
-            'Код упаковки': '', 
+            'ИКПУ': '',
+            'Код упаковки': '',
             'Комплектация': find_value_in_arrays(options, advanced_info_group, search_name='Комплектация'),
             'Назначение косметического средства': find_value_in_arrays(options, advanced_info_group, search_name='Назначение косметического средства'),
-            'Назначение подарка': '', 
+            'Назначение подарка': '',
             'Объем товара': extract_number(find_value_in_arrays(options, cosmetics_group, search_name='Объем товара')),
-            'Повод': '', 
-            'Раздел меню': '', 
+            'Повод': '',
+            'Раздел меню': '',
             'Срок годности': find_value_in_arrays(options, advanced_info_group, search_name='Срок годности'),
             'Страна производства': find_value_in_arrays(options, advanced_info_group, search_name='Страна производства'),
             'ТНВЭД': find_value_in_arrays(options, advanced_info_group, search_name='ТН ВЭД'),
-            'Тип доставки': '', 
+            'Тип доставки': '',
             'Тип кожи': find_value_in_arrays(options, cosmetics_group, search_name='Тип кожи'),
             'Упаковка': find_value_in_arrays(options, advanced_info_group, search_name='Упаковка'),
-            'Форма упаковки': '', 
+            'Форма упаковки': '',
             'Ставка НДС': '20'
         }
         new_data.append(new_item)
@@ -272,10 +279,10 @@ def create_excel_file(data):
 
     if not os.path.exists("downloads"):
         os.makedirs("downloads")
-    
+
     filename = f"result_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.xlsx"
     output_path = os.path.join("downloads", filename)
-    
+
     wb = Workbook()
     ws = wb.active
 
@@ -309,10 +316,10 @@ def create_excel_file(data):
     # Строка 1 - объединенные ячейки согласно требованиям
     # Создаем строку с правильным распределением текста по объединенным ячейкам
     row1_data = [''] * 43  # Создаем пустую строку из 43 ячеек
-    
+
     # Заполняем ячейки, которые будут объединены
     ws.append(row1_data)
-    
+
     # Объединение ячеек в строке 1
     ws.merge_cells('C1:K1')  # Основная информация C - K
     ws.merge_cells('L1:L1')  # Размеры и Баркоды L
@@ -320,7 +327,7 @@ def create_excel_file(data):
     ws.merge_cells('R1:V1')  # Документы R - V
     ws.merge_cells('W1:AP1') # Дополнительная информация W - AP
     ws.merge_cells('AQ1:AQ1') # Цены AQ
-    
+
     # Заполняем объединенные ячейки текстом
     ws['C1'] = 'Основная информация'
     ws['L1'] = 'Размеры и Баркоды'
@@ -328,7 +335,7 @@ def create_excel_file(data):
     ws['R1'] = 'Документы'
     ws['W1'] = 'Дополнительная информация'
     ws['AQ1'] = 'Цены'
-    
+
     for cell in ws[1]:
         cell.style = header_style_s0
     ws.row_dimensions[1].height = 41
@@ -336,7 +343,7 @@ def create_excel_file(data):
     # Строка 2 - такое же объединение как в строке 1
     row2_data = [''] * 43
     ws.append(row2_data)
-    
+
     # Объединение ячеек в строке 2 (такое же как в строке 1)
     ws.merge_cells('C2:K2')  # Основная информация C - K
     ws.merge_cells('L2:L2')  # Размеры и Баркоды L
@@ -344,7 +351,7 @@ def create_excel_file(data):
     ws.merge_cells('R2:V2')  # Документы R - V
     ws.merge_cells('W2:AP2') # Дополнительная информация W - AP
     ws.merge_cells('AQ2:AQ2') # Цены AQ
-    
+
     for cell in ws[2]:
         cell.style = header_style_s1
     ws.row_dimensions[2].height = 63
@@ -356,7 +363,7 @@ def create_excel_file(data):
         cell.style = header_style_s2
 
     ws.row_dimensions[3].height = 41
-    
+
     # Строка 4 - описания
     descriptions_row4 = [
         '',
@@ -420,23 +427,23 @@ def create_excel_file(data):
             for header in headers_row3:
                  row_to_append.append(row_data.get(header, ''))
             ws.append(row_to_append)
-            
+
     # Устанавливаем ширину столбцов
     for col in range(ord('A'), ord('Q') + 1):
         ws.column_dimensions[chr(col)].width = 30
 
-    wb.save(output_.path)
+    wb.save(output_path)
     return output_path
 
 # --- Прочие вспомогательные функции (без изменений) ---
-def find_options_by_group_name(grouped_options, group_name): 
+def find_options_by_group_name(grouped_options, group_name):
     try: return next((g['options'] for g in grouped_options if g['group_name'] == group_name), [])
     except (TypeError, KeyError): return []
 
 def find_value_in_arrays(*arrays, search_name):
     for arr in arrays:
         if not isinstance(arr, list): continue
-        for item in arr: 
+        for item in arr:
             if isinstance(item, dict) and item.get('name') == search_name: return item.get('value')
     return ''
 
