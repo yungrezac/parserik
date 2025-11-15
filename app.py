@@ -88,18 +88,7 @@ def download_file(filename):
 # --- Логика парсинга ---
 def stream_parser(seller_id, brand_id, xsubject_id=None):
     all_products = []
-    
-    yield json.dumps({'type': 'log', 'message': 'Получение информации о продавце...'})
     seller_name = "Не найден"
-    try:
-        seller_page_url = f"https://www.wildberries.ru/seller/{seller_id}"
-        seller_page_res = make_request(seller_page_url)
-        seller_page_html = seller_page_res.text
-        match = re.search(r'<h2 class="seller-details__title">([^<]+)</h2>', seller_page_html)
-        if match:
-            seller_name = match.group(1).strip()
-    except Exception:
-        yield json.dumps({'type': 'log', 'message': 'Не удалось получить имя продавца со страницы.'})
 
     yield json.dumps({'type': 'log', 'message': 'Получение карты маршрутов WB...'})
     baskets = get_mediabasket_route_map()
@@ -149,9 +138,9 @@ def stream_parser(seller_id, brand_id, xsubject_id=None):
                 except requests.exceptions.RequestException: item['advanced'] = {}; break
             
             all_products.append(item)
-            time.sleep(random.uniform(0.05, 0.2))
+            time.sleep(random.uniform(0.1, 0.3))
 
-        time.sleep(random.uniform(0.5, 1.5))
+        time.sleep(random.uniform(1, 2))
 
     columns = get_columns_for_subcategory(xsubject_id)
 
